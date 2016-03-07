@@ -2,3 +2,5 @@
 .DS_Store
 .project
 .classpath
+captcha/dev-resources/
+captcha/target/
