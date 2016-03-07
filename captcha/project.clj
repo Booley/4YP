@@ -13,4 +13,8 @@
   :main ^:skip-aot captcha.core
   :target-path "target/%s"
   :java-source-paths ["../CaptchaTools/src/"]
+  :resource-paths ["/Users/bomoon/Documents/JavaCPP/javacpp-presets/BACKUP_JARS/target/opencv.jar"
+                   "/Users/bomoon/Documents/JavaCPP/javacpp-presets/BACKUP_JARS/target/caffe.jar"
+                   "/Users/bomoon/Documents/JavaCPP/javacpp-presets/BACKUP_JARS/target/caffe-macosx-x86_64.jar"
+                   "/Users/bomoon/Documents/JavaCPP/javacpp-presets/BACKUP_JARS/target/opencv-macosx-x86_64.jar"]
   :profiles {:uberjar {:aot :all}})
