@@ -2,6 +2,7 @@ import java.awt.image.BufferedImage;
 import java.awt.image.DataBufferByte;
 import java.io.File;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Random;
 import javax.imageio.ImageIO;
 
@@ -29,7 +30,7 @@ public class Captcha
 	
 	private Mat img;
 	
-	public static Mat baselineCopy;
+	public static Mat baselineCopy; //why static?
 //	public static boolean madeBaseline = false;
 	
 	// create a blank captcha
@@ -94,6 +95,39 @@ public class Captcha
 			}
 		}
 		img = m;
+	}
+	
+	public void rippleCentered(double amplitude, double period, double shift)
+	{
+		int maxy = -1;
+		int miny = 10000;
+		
+		Mat m = Mat.zeros(img.size(), img.type());
+		for (int i = 0; i < width; i++)
+		{
+			int dy = (int)Math.round(amplitude * Math.sin(2 * Math.PI / period * (i - shift)));
+			maxy = Math.max(maxy, dy);
+			miny = Math.min(miny, dy);
+			
+			for (int j = 0; j < height; j++)
+			{
+				double newVal = img.get((j - dy + height) % height, i)[0];
+				m.put(j, i, newVal);
+			}
+		}
+		
+		Mat tmp = Mat.zeros(img.size(), img.type());
+		int dist = (int)Math.round(amplitude * Math.sin(2 * Math.PI / period * (width/2 - shift)));
+		for (int i = 0; i < width; i++)
+		{
+			for (int j = 0; j < height; j++)
+			{
+				tmp.put((j - (int)dist + height) % height, i, 
+						m.get(j, i)[0]);
+			}
+		}
+		
+		img = tmp;
 	}
 	
 	public void clear()
@@ -161,6 +195,15 @@ public class Captcha
 		BufferedImage bufferedImg = im.toBufferedImage(img);
 		File outputfile = new File(String.format("image%04d.png", id));
 		id++;
+		ImageIO.write(bufferedImg, "png", outputfile);
+	}
+	
+	//must be filename.png
+	public void saveImg(String name) throws IOException
+	{
+		Imshow im = new Imshow("idk");
+		BufferedImage bufferedImg = im.toBufferedImage(img);
+		File outputfile = new File(name);
 		ImageIO.write(bufferedImg, "png", outputfile);
 	}
 	
@@ -348,4 +391,15 @@ public class Captcha
 		Imgproc.resize(img, img, sz);
 	}
 
+	public Mat toC3()
+	{
+		ArrayList<Mat> list = new ArrayList<Mat>();
+		list.add(img);
+		list.add(img);
+		list.add(img);
+		Mat m = new Mat();
+		Core.merge(list, m);
+
+		return m;
+	}
 }

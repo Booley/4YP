@@ -1,28 +1,53 @@
+import java.awt.image.BufferedImage;
+import java.awt.image.DataBufferByte;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Arrays;
+
+import org.bytedeco.javacpp.BytePointer;
+import org.bytedeco.javacpp.DoublePointer;
+import org.bytedeco.javacpp.IntPointer;
+import org.bytedeco.javacpp.Pointer;
+import org.bytedeco.javacpp.opencv_core;
+import org.bytedeco.javacpp.opencv_imgcodecs;
 import org.bytedeco.javacpp.opencv_imgproc;
 import org.bytedeco.javacpp.indexer.FloatBufferIndexer;
 import org.bytedeco.javacpp.opencv_core.Mat;
+import org.bytedeco.javacpp.opencv_core.MatVector;
+import org.bytedeco.javacpp.opencv_core.Rect;
 import org.bytedeco.javacpp.opencv_core.Size;
+import org.bytedeco.javacpp.opencv_dnn;
 import org.bytedeco.javacpp.opencv_dnn.Blob;
 import org.bytedeco.javacpp.opencv_dnn.Importer;
 import org.bytedeco.javacpp.opencv_dnn.Net;
 
 public class CNN
 {
-	public static int SIZE = 120;
+	//captcha: 120
+	//letter: 30
+	public static int SIZE = 30;
 	public Net net;
+	public int size;
+	public double[] scores;
 	
 	// import net and weights
 	public CNN(String model, String weights)
 	{
-		Importer importer = org.bytedeco.javacpp.opencv_dnn.createCaffeImporter(model, weights);
+		Importer importer = opencv_dnn.createCaffeImporter(model, weights);
 		net = new Net();
 		importer.populateNet(net);
+		scores = null;
 	}
 	
+	// be careful about num channels
+	// forward pass and cache scores
 	public double[] forward(Mat img)
-	{
-		opencv_imgproc.resize(img, img, new Size(SIZE, SIZE));
-		Blob inputBlob = new Blob(img);
+	{	
+		// must allocate to new mat, or error
+		Mat resized = new Mat();
+		opencv_imgproc.resize(img, resized, new Size(SIZE, SIZE));
+
+		Blob inputBlob = new Blob(resized);
 
 		net.setBlob(".data", inputBlob);
 		net.forward();
@@ -35,7 +60,42 @@ public class CNN
 		for(int i = 0; i < results.length; i++)
 			results[i] = idx.get(0,i);
 		
+		scores = results;
 		return results;
 	}
 	
+	public static Mat convertFast(BufferedImage bufferedImage) {
+	    byte[] data = ((DataBufferByte) bufferedImage.getRaster().getDataBuffer()).getData();
+	    return new Mat(data, false).reshape(bufferedImage.getColorModel().getNumComponents(), bufferedImage.getHeight());
+	}
+	
+	//must convert c.img() Mat type to javacpp.Mat type
+	//also check num channels?
+	public double[] forward(Captcha c) throws IOException
+	{
+		Mat tmp = new Mat(new BytePointer()) {{ address = c.toC3().getNativeObjAddr(); }};
+		
+		return forward(tmp);
+	}
+	
+	// must perform forward pass first
+	public Pair[] getTop(int n)
+	{
+		ArrayList<Pair> list = new ArrayList<Pair>();
+		for(int i = 0; i < scores.length; i++)
+		{
+			list.add(new Pair(scores[i], i));
+		}
+		Pair[] arr = list.toArray(new Pair[0]);
+		Arrays.sort(arr);
+		
+		Pair[] top = new Pair[n];
+		
+		for(int i = 0; i < n; i++)
+		{
+			top[i] = arr[arr.length - 1 - i];
+		}
+		
+		return top;
+	}
 }

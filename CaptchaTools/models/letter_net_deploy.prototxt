@@ -1,0 +1,114 @@
+name: "letter_net"
+input: "data"
+input_dim: 10
+input_dim: 1
+input_dim: 30
+input_dim: 30
+
+
+layer {
+  name: "conv1"
+  type: "Convolution"
+  param { lr_mult: 1 }
+  param { lr_mult: 2 }
+  convolution_param {
+    num_output: 500 
+    kernel_size: 5
+    stride: 1
+    weight_filler {
+      type: "xavier"
+    }
+    bias_filler {
+      type: "constant"
+    }
+  }
+
+  bottom: "data" 
+  top: "conv1"
+}
+
+layer {
+  name: "pool1"
+  type: "Pooling"
+  pooling_param { 
+    kernel_size: 2
+    stride: 2
+    pool: MAX
+  }
+  bottom: "conv1"
+  top: "pool1"
+}
+
+layer {
+  name: "conv2"
+  type: "Convolution"
+  param { lr_mult: 1 }
+  param { lr_mult: 2 }
+  convolution_param {
+    num_output: 100 
+    kernel_size: 5
+    stride: 1
+    weight_filler {
+      type: "xavier"
+    }
+    bias_filler {
+      type: "constant"
+    }
+  }
+
+  bottom: "pool1" 
+  top: "conv2"
+}
+
+layer {
+  name: "ip1"
+  type: "InnerProduct"
+  param { lr_mult: 1 }
+  param { lr_mult: 2 }
+  inner_product_param {
+    num_output: 50
+    weight_filler {
+      type: "xavier"
+    }
+    bias_filler {
+      type: "constant"
+    }
+  }
+  bottom: "conv2"
+  top: "ip1"
+}
+
+layer {
+  name: "drop"
+  type: "Dropout"
+  bottom: "ip1"
+  top: "ip1"
+  dropout_param {
+    dropout_ratio: 0.5
+  }
+}
+
+layer {
+  name: "ip2"
+  type: "InnerProduct"
+  param { lr_mult: 1 }
+  param { lr_mult: 2 }
+  inner_product_param {
+    num_output: 62
+    weight_filler {
+      type: "xavier"
+    }
+    bias_filler {
+      type: "constant"
+    }
+  }
+  bottom: "ip1"
+  top: "ip2"
+}
+
+layer {
+  name: "prob"
+  type: "Softmax"
+  bottom: "ip2" 
+  top: "prob" 
+}
