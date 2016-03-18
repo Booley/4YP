@@ -151,20 +151,25 @@ public class Utils
 		{
 			String letter = Utils.alphabet.charAt(i) + "";
 			
-			for (int amplitude = 0; amplitude < 30; amplitude += 6)
+			for (int amplitude = 0; amplitude < 30; amplitude += 5)
 			{
 				for (int period = 130; period < 250; period += 20)
 				{
 					for (int shift = 0; shift < period; shift += 20)
 					{
-						
 						output.println(i);
 						
 						Captcha c = new Captcha(40, 40);
 						c.drawLetter(letter, 20, 20, 2, 0, 2, 0);
 						c.rippleCentered(amplitude, period, shift);
 						
-						c.saveImg(String.format("image%06d.png", counter++));
+						if(Math.random() < 0.5)
+						{
+//							c.addNoise(300);
+							c.dilate();
+						}
+						counter++;
+						c.saveImg(String.format("images/image%06d.png", counter));
 					}
 				}
 			}
@@ -173,6 +178,7 @@ public class Utils
 		}
 		System.out.println("Total images made: " + counter);
 		output.close();
+		System.out.println(counter);
 	}
 	
 	// creates n captchas and stores labels in filename, based on ripples 

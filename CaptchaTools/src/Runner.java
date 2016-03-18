@@ -24,30 +24,18 @@ public class Runner
 		
 //		System.out.println(Arrays.toString(net.forward(c)));
 		
-//		Utils.letterBatch("letter_labels.txt");
+		Utils.letterBatch("letter_labels.txt");
+		
+//		
+//		String model = "models/letter_net_deploy.prototxt"; 
+//		String weights = "models/snapshots/letter_net_iter_2000.caffemodel";
+//		int imnum = 0;
+//		Mat img = opencv_imgcodecs.imread(String.format("models/letters_many/image%06d.png", imnum));
+//		System.out.println(img);
+//		CNN net = new CNN(model, weights);
 		
 		
-		String model = "models/letter_net_deploy.prototxt"; 
-		String weights = "models/snapshots/letter_net_iter_2000.caffemodel";
-		int imnum = 0;
-		Mat img = opencv_imgcodecs.imread(String.format("models/letters_many/image%06d.png", imnum));
-		System.out.println(img);
-		CNN net = new CNN(model, weights);
 		
-//		Captcha c = new Captcha(70, 100);
-		Captcha c = Captcha.generateBaseline(7);
-//		c.drawText("3", 10, 40, 2, 2, 0.9, 0);
-		c.rippleCentered(10, 100, 0);
-//		c.denoise();
-//		c.dilate();
-		c.showImg();
-		Utils.slidingWindow(c.getImg(), net);
-		
-		org.opencv.core.Mat resized = new org.opencv.core.Mat();
-		Imgproc.pyrDown(c.getImg(), resized);
-		Imshow im = new Imshow("");
-		im.showImage(resized);
-		Utils.slidingWindow(resized, net);
 		
 		
 //		System.exit(0);
