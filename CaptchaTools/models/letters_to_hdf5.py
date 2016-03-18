@@ -4,8 +4,8 @@ import sys
 import caffe
 
 SIZE = 30 # fixed size to all images
-NUM_IMGS = 17670
-file_labels = 'letter_labels.txt'
+NUM_IMGS = 21204
+file_labels = '../letter_labels.txt'
 
 # transformer = caffe.io.Transformer({'data': net.blobs['data'].data.shape})
 # transformer.set_transpose('data', (2,0,1))
@@ -17,14 +17,14 @@ for i in range(NUM_IMGS):
 	if i % 10 == 0:
 		print i
 
-	img = caffe.io.load_image("image%06d.png" % (i))
+	img = caffe.io.load_image("../images/image%06d.png" % (i))
 	img = caffe.io.resize_image( img, (SIZE, SIZE), interp_order=3 ) # resize to fixed size
 	img = img.transpose((2,0,1))
 
 	# you may apply other input transformations here...
 	X[i] = img
 
-X = np.multiply(X, 255)
+# X = np.multiply(X, 255)
 
 outputH5 = 'train_letters.h5'
 
