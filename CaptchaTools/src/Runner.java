@@ -8,9 +8,6 @@ import org.bytedeco.javacpp.opencv_core.Mat;
 import org.bytedeco.javacpp.opencv_imgcodecs;
 import org.opencv.imgproc.Imgproc;
 
-import com.sun.xml.internal.ws.policy.privateutil.PolicyUtils.Collections;
-
-
 public class Runner
 {
 	
@@ -37,8 +34,9 @@ public class Runner
 		System.out.println(img);
 		CNN net = new CNN(model, weights);
 		
-		Captcha c = new Captcha(70, 100);
-		c.drawText("3", 10, 40, 2, 2, 0.9, 0);
+//		Captcha c = new Captcha(70, 100);
+		Captcha c = Captcha.generateBaseline(7);
+//		c.drawText("3", 10, 40, 2, 2, 0.9, 0);
 		c.rippleCentered(10, 100, 0);
 //		c.denoise();
 //		c.dilate();

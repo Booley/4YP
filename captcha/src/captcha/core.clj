@@ -232,19 +232,19 @@
 ))))
 
 
-(def baseline (Captcha/generateBaseline 7))
-;; (def baseline (Captcha. LENGTH WIDTH "captcha4.png"))
-;; (drawText baseline "boron" 10 40 3 2 0.8 0)
-;; (ripple baseline 10 200 10)
+;; (def baseline (Captcha/generateBaseline 7))
+(def baseline (Captcha. LENGTH WIDTH))
+(drawText baseline "boron" 10 40 3 2 0.8 0)
+(ripple baseline 10 200 10)
 
 
 ;; (.saveImg baseline)
 
 (.denoise baseline)
 
-;; (.dilate baseline)
+(.dilate baseline)
 (globalBlur baseline 1)
-(.showImg baseline)
+;; (.showImg baseline)
 
 
 ;; (def ripple-proposal (vec (.forward net baseline)))
@@ -273,11 +273,11 @@
 
 
 
-(def likelihoods (map get-log-weight (take max-runs sampler)))
-(save-weights "weights.txt" likelihoods)
+;; (def likelihoods (map get-log-weight (take max-runs sampler)))
+;; (save-weights "weights.txt" likelihoods)
 
 
 
-(def predicts (map get-predicts (take max-runs sampler)))
-(apply min-key :error predicts)
+;; (def predicts (map get-predicts (take max-runs sampler)))
+;; (apply min-key :error predicts)
 

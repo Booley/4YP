@@ -11,9 +11,12 @@ captcha/*.png
 .solverstate
 .h5
 
+resources/
+
 captcha/dev-resources/
 captcha/target/
 
 CaptchaTools/letters_few/
 CaptchaTools/models/letters_many/
 CaptchaTools/models/snapshots/
+
