@@ -17,7 +17,7 @@ for i in range(NUM_IMGS):
 	if i % 10 == 0:
 		print i
 
-	img = caffe.io.load_image("../images/image%06d.png" % (i))
+	img = caffe.io.load_image("../images/image%06d.png" % (i+1))
 	img = caffe.io.resize_image( img, (SIZE, SIZE), interp_order=3 ) # resize to fixed size
 	img = img.transpose((2,0,1))
 

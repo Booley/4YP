@@ -3,13 +3,13 @@
 .project
 .classpath
 
-.png
+*.png
 captcha/*.png
-.jpg
+*.jpg
 
-.caffemodel
-.solverstate
-.h5
+*.caffemodel
+*.solverstate
+*.h5
 
 resources/
 
