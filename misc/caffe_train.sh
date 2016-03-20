@@ -11,4 +11,4 @@ export LD_LIBRARY_PATH=${LD_LIBRARY_PATH}:/lib:/scratch/bhmoon/Documents/libs/li
 
 
 cd /scratch/bhmoon/4YP/CaptchaTools/models
-/scratch/bhmoon/caffe/build/tools/caffe.bin train -solver=letter_solver.prototxt
+/scratch/bhmoon/caffe/build/tools/caffe.bin train -solver=letter_solver.prototxt -snapshot=snapshots/letter_net_iter_1775.solverstate
