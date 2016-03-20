@@ -114,36 +114,8 @@ layer {
 }
 
 layer {
-  name: "drop"
-  type: "Dropout"
-  bottom: "ip2"
-  top: "ip2"
-  dropout_param {
-    dropout_ratio: 0.5
-  }
-}
-
-layer {
-  name: "ip3"
-  type: "InnerProduct"
-  param { lr_mult: 1 }
-  param { lr_mult: 2 }
-  inner_product_param {
-    num_output: 62
-    weight_filler {
-      type: "xavier"
-    }
-    bias_filler {
-      type: "constant"
-    }
-  }
-  bottom: "ip2"
-  top: "ip3"
-}
-
-layer {
   name: "loss"
   type: "SoftmaxWithLoss"
-  bottom: "ip3" 
+  bottom: "ip2" 
   bottom: "label" 
 }
