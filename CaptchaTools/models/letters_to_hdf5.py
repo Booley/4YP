@@ -4,7 +4,7 @@ import sys
 import caffe
 
 SIZE = 30 # fixed size to all images
-NUM_IMGS = 21204
+NUM_IMGS = 12400
 file_labels = '../letter_labels.txt'
 
 # transformer = caffe.io.Transformer({'data': net.blobs['data'].data.shape})

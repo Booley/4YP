@@ -151,11 +151,11 @@ public class Utils
 		{
 			String letter = Utils.alphabet.charAt(i) + "";
 			
-			for (int amplitude = 0; amplitude < 30; amplitude += 5)
+			for (int amplitude = 0; amplitude < 30; amplitude += 6)
 			{
-				for (int period = 130; period < 250; period += 20)
+				for (int period = 130; period < 250; period += 25)
 				{
-					for (int shift = 0; shift < period; shift += 20)
+					for (int shift = 0; shift < period; shift += 25)
 					{
 						output.println(i);
 						
