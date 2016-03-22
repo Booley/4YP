@@ -115,7 +115,7 @@ layer {
 
 layer {
   name: "loss"
-  type: "SoftmaxWithLoss"
+  type: "EuclideanLoss"
   bottom: "ip2" 
   bottom: "label" 
 }
