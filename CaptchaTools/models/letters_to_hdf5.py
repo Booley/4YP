@@ -14,9 +14,10 @@ outputH5_prefix = 'train_letters'
 # transformer = caffe.io.Transformer({'data': net.blobs['data'].data.shape})
 # transformer.set_transpose('data', (2,0,1))
 
-X = np.zeros( (NUM_IMGS, 3,SIZE, SIZE), dtype='f4' )
 y = np.loadtxt(file_labels)
 NUM_IMGS = y.shape[0]
+X = np.zeros( (NUM_IMGS, 3,SIZE, SIZE), dtype='f4' )
+
 
 for i in range(NUM_IMGS):
 	if i % 10 == 0:
