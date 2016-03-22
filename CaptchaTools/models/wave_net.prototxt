@@ -5,7 +5,7 @@ layer {
   type: "HDF5Data"
 
   hdf5_data_param {
-    source: "train_letters_h5_list.txt"
+    source: "train_wave_h5_list.txt"
     batch_size: 32
   }
 
