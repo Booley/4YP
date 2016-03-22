@@ -1,4 +1,4 @@
-name: "letter_net"
+name: "wave_net"
 
 layer {
   name: "input"
@@ -52,7 +52,7 @@ layer {
   param { lr_mult: 1 }
   param { lr_mult: 2 }
   convolution_param {
-    num_output: 100 
+    num_output: 80 
     kernel_size: 5
     stride: 1
     weight_filler {
@@ -73,7 +73,7 @@ layer {
   param { lr_mult: 1 }
   param { lr_mult: 2 }
   inner_product_param {
-    num_output: 80
+    num_output: 30
     weight_filler {
       type: "xavier"
     }
@@ -101,7 +101,7 @@ layer {
   param { lr_mult: 1 }
   param { lr_mult: 2 }
   inner_product_param {
-    num_output: 62
+    num_output: 3
     weight_filler {
       type: "xavier"
     }
@@ -115,7 +115,7 @@ layer {
 
 layer {
   name: "loss"
-  type: "SoftmaxWithLoss"
+  type: "EuclideanLoss"
   bottom: "ip2" 
   bottom: "label" 
 }

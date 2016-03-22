@@ -52,7 +52,7 @@ layer {
   param { lr_mult: 1 }
   param { lr_mult: 2 }
   convolution_param {
-    num_output: 100 
+    num_output: 80
     kernel_size: 5
     stride: 1
     weight_filler {
@@ -73,7 +73,7 @@ layer {
   param { lr_mult: 1 }
   param { lr_mult: 2 }
   inner_product_param {
-    num_output: 80
+    num_output: 35
     weight_filler {
       type: "xavier"
     }
@@ -101,7 +101,7 @@ layer {
   param { lr_mult: 1 }
   param { lr_mult: 2 }
   inner_product_param {
-    num_output: 62
+    num_output: 9
     weight_filler {
       type: "xavier"
     }

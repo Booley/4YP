@@ -7,17 +7,44 @@ import org.bytedeco.javacpp.BytePointer;
 import org.opencv.core.Core;
 import org.opencv.core.CvType;
 import org.opencv.core.Mat;
+import org.opencv.core.Point;
 import org.opencv.core.Rect;
+import org.opencv.core.Scalar;
 import org.opencv.imgproc.Imgproc;
 
 public class Utils
 {
-	public static String alphabet = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890";
+	public static String alphabet = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890        ";
+	
+	private static int npmax(List<Integer> list, List<Pair> idx)
+	{
+		int max = list.get(idx.get(idx.size()-1).idx);
+		
+		for(int i = 0; i < idx.size()-1; i++)
+		{
+			max = Math.max(max, list.get(idx.get(i).idx));
+		}
+		
+		return max;
+	}
+	
+	private static int npmin(List<Integer> list, List<Pair> idx)
+	{
+		int min = list.get(idx.get(idx.size()-1).idx);
+		
+		for(int i = 0; i < idx.size()-1; i++)
+		{
+			min = Math.min(min, list.get(idx.get(i).idx));
+		}
+		
+		return min;
+	}
 	
 	//unfinished
-	public static void nms(ArrayList<Box> boxes, double threshhold)
+	public static List<Box> nms(List<Box> boxes, double threshhold)
 	{
-		ArrayList<Integer> picked = new ArrayList<Integer>();
+		System.out.println(boxes.size());
+		ArrayList<Integer> pick = new ArrayList<Integer>();
 		LinkedList<Integer> x1 = new LinkedList<Integer>();
 		LinkedList<Integer> y1 = new LinkedList<Integer>();
 		LinkedList<Integer> x2 = new LinkedList<Integer>();
@@ -36,25 +63,95 @@ public class Utils
 		for (int i = 0; i < boxes.size(); i++)
 		{
 			int area = (x2.get(i) - x1.get(i) + 1) * (y2.get(i) - y1.get(i) + 1);
+			areas.add(area);
 			idx.add(new Pair(y2.get(i), i));
 		}
 		
 		Collections.sort(idx);
-		
+
 		while(idx.size() > 0)
 		{
-//			int last = idx.get(idx.size()-1);
+			System.out.println(idx.size());
+			int last = idx.size() - 1;
+			int i = idx.get(last).idx;
+			pick.add(i);
+			ArrayList<Integer> suppress = new ArrayList<Integer>();
+			suppress.add(last);
 			
+			for(int k = 0; k < last; k++)
+			{
+				int j = idx.get(k).idx;
+				
+				int xx1 = Math.max(x1.get(i), x1.get(j));
+				int yy1 = Math.max(y1.get(i), y1.get(j));
+				int xx2 = Math.min(x2.get(i), x2.get(j));
+				int yy2 = Math.min(y2.get(i), y2.get(j));
+				
+				int w = Math.max(0, xx2 - xx1 + 1);
+				int h = Math.max(0, yy2 - yy1 + 1);
+				double overlap = 1.0 * (w * h) / areas.get(j);
+//				System.out.println(overlap);
+				if(overlap > threshhold)
+					suppress.add(k);
+			}
+			Collections.sort(suppress);
+
+			for(int h = 0; h < suppress.size(); h++)
+			{
+				System.out.printf("%d %d %d\n", idx.size(), suppress.size()-h+1, suppress.get(suppress.size()-h-1));
+				System.out.println(idx.remove((int) (suppress.get(suppress.size()-h-1))));
+			}
+			
+//			int i = idx.get(idx.size() - 1).idx;
+//			pick.add(i);
+//			
+//			System.out.println(idx.size());
+//			int xx1 = Collections.max(x1);
+//			int yy1 = Collections.max(y1);
+//			int xx2 = Collections.min(x2);
+//			int yy2 = Collections.min(y2);
+//			
+//			int w = Math.max(0,  xx2 - xx1 + 1);
+//			int h = Math.max(0,  yy2 - yy1 + 1);
+//			
+//			ArrayList<Double> overlap = new ArrayList<Double>();
+//			for(int j = 0; j < idx.size()-1; j++)
+//			{
+//				overlap.add(1.0 * (w*h) / areas.get(idx.get(j).idx));
+//				System.out.printf("%d %d\n", w*h, areas.get(idx.get(j).idx));
+//			}
+//			
+//			ArrayList<Pair> filtered = new ArrayList<Pair>();
+//			for(int j = 0; j < overlap.size(); j++)
+//			{
+//				System.out.printf("overlap: %f\n", overlap.get(j));
+//				if(overlap.get(j) > threshhold)
+//					filtered.add(idx.get(j));
+//			}
+//			
+//			idx = filtered;
 		}
-		
+//		System.out.println(pick.size());
+//		ArrayList<Box> finalBoxes = new ArrayList<Box>();
+//		for(int i: pick)
+//		{
+//			finalBoxes.add(boxes.get(i));
+//		}
+//		
+//		return finalBoxes;
+		System.out.println(idx.size());
+		ArrayList<Box> finalBoxes = new ArrayList<Box>();
+		for(Pair p: idx)
+			finalBoxes.add(boxes.get(p.idx));
+		return finalBoxes;
 	}
 	
-	public static void slidingWindow(Mat img, CNN net)
+	public static List<Box> slidingWindow(Mat img, CNN net)
 	{
-		int dx = 4;
-		int dy = 4;
-		int boxWidth = 50;
-		int boxHeight = 50;
+		int dx = 6;
+		int dy = 6;
+		int boxWidth = 40;
+		int boxHeight = 40;
 		
 		Hashtable<Integer, Double> counts = new Hashtable<Integer, Double>();
 		for (int i = 0; i < alphabet.length(); i++)
@@ -67,6 +164,16 @@ public class Utils
 
 		// for each location
 		int counter = 0;
+		ArrayList<Box> boxes = new ArrayList<Box>();
+		Mat haar = Mat.zeros(boxWidth, boxHeight, img.type());
+		for(int i = 10; i <= 30; i++)
+		{
+			for(int j = 10; j <= 30; j++)
+			{
+				haar.put(i, j, new double[]{1});
+			}
+		}
+		
 		for (int i = 0; i + boxWidth < img.size().width; i += dx)
 		{
 			for (int j = 0; j + boxHeight < img.size().height; j += dy)
@@ -77,11 +184,18 @@ public class Utils
 				
 				sub = img.submat(roi);
 				
-				int sum = (int) Core.sumElems(sub).val[0];
-				if(sum / 255 > 121)
+				Mat and = new Mat();
+				Core.bitwise_and(sub, haar, and);
+				
+				int sum = (int) Core.sumElems(and).val[0];
+				System.out.println(sum);
+				if(sum > 100)
 				{
+					boxes.add(new Box(i, j, i+boxWidth, j+boxHeight));
+					Core.rectangle(img, new Point(i, j), new Point(i+boxWidth, j+boxHeight), new Scalar(100,100,100,1));
+					
 					Imshow im = new Imshow("");
-					im.showImage(sub);
+//					im.showImage(sub);
 					System.out.println(sum / 255);
 					counter++;
 					net.forward(convertOpenCVToJavaCV(toC3(sub)));
@@ -109,6 +223,8 @@ public class Utils
 		{
 			System.out.println(list[list.length-1-i]);
 		}
+		
+		return boxes;
 	}
 	
 	public static Mat toC3(Mat img)
@@ -182,24 +298,30 @@ public class Utils
 	}
 	
 	// creates n captchas and stores labels in filename, based on ripples 
-	public static void rippleBatch(int n, String filename) throws IOException
+	public static void captchaBatch(int n) throws IOException
 	{
 		int numImgs = n;
-		int width = 250; //220
-		int height = 120; //100
+		int width = 240; //220
+		int height = 110; //100
 		Random rdm = new Random();
 		
-		PrintWriter output = new PrintWriter(filename);
-
+		PrintWriter outputWave = new PrintWriter("wave_labels.txt");
+		PrintWriter outputNum = new PrintWriter("num_letters_labels.txt");
+		PrintWriter outputPositions = new PrintWriter("position_labels.txt");
+		
+		int counter = 0;
 		for (int i = 0; i < numImgs; i++)
 		{
+			if(i % 100 == 0)
+				System.out.println(i);
+			counter++;
 			Captcha c = new Captcha(height, width);
 
 			// determine parameters
-			int numLetters = 3 + rdm.nextInt(10);
+			int numLetters = 3 + rdm.nextInt(6);
 
-			int x = rdm.nextInt(width / 2 + 10) + 10;
-			int y = rdm.nextInt((int) (height - 30)) + 20;
+			int x = rdm.nextInt(width / 5) + 5;
+			int y = rdm.nextInt((int) (height - 80)) + 60; //want max 90
 
 			double spacing = rdm.nextDouble() / 5 + 0.7;
 			int scale = rdm.nextInt(2) + 2;
@@ -223,8 +345,8 @@ public class Utils
 			c.globalBlur(globalSigma);
 
 			// insert noise
-			int numPoints = rdm.nextInt(500);
-			int numLines = rdm.nextInt(3);
+			int numPoints = rdm.nextInt(1200) + 300;
+			int numLines = rdm.nextInt(5);
 			c.addNoise(numPoints);
 			for (int j = 0; j < numLines; j++)
 			{
@@ -239,10 +361,15 @@ public class Utils
 			c.ripple(amplitude, period, shift);
 
 			// c.showImg();
-			c.saveImg();
-			output.printf("%d %d %d\n", amplitude, period, shift);
+			c.saveImg("images/captchas/" + String.format("image%06d.png", counter));
+			outputWave.printf("%d %d %d\n", amplitude, period, shift);
+			outputNum.printf("%d\n", numLetters);
+			outputPositions.printf("%d %d\n", x, y);
 		}
-		output.close();
+
+		outputWave.close();
+		outputNum.close();
+		outputPositions.close();
 	}
 }
 
@@ -258,6 +385,5 @@ class Box
 		this.x2 = x2;
 		this.y2 = y2;
 	}
-	
 	
 }

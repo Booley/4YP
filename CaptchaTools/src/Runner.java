@@ -2,15 +2,22 @@ import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 import java.util.Scanner;
 
 import org.bytedeco.javacpp.opencv_core.Mat;
 import org.bytedeco.javacpp.opencv_imgcodecs;
+import org.opencv.core.Core;
+import org.opencv.core.Point;
+import org.opencv.core.Scalar;
 import org.opencv.imgproc.Imgproc;
 
 public class Runner
 {
-	
+	static
+	{
+		System.loadLibrary(Core.NATIVE_LIBRARY_NAME);
+	}
 	//don't forget to comment out
 	public static void main(String[] args) throws IOException
 	{
@@ -24,24 +31,42 @@ public class Runner
 		
 //		System.out.println(Arrays.toString(net.forward(c)));
 		
-		Utils.letterBatch("letter_labels.txt");
+//		Utils.letterBatch("letter_labels.txt");
 		
 //		
-//		String model = "models/letter_net_deploy.prototxt"; 
-//		String weights = "models/snapshots/letter_net_iter_2000.caffemodel";
-//		int imnum = 0;
-//		Mat img = opencv_imgcodecs.imread(String.format("models/letters_many/image%06d.png", imnum));
+		String model = "models/letter_net_deploy.prototxt"; 
+		String weights = "models/snapshots/letter_net_iter_17600.caffemodel";
+		int imnum = 16000;
+		Mat img = opencv_imgcodecs.imread(String.format("models/letters_many/image%06d.png", imnum));
 //		System.out.println(img);
-//		CNN net = new CNN(model, weights);
+		CNN net = new CNN(model, weights);
 		
+		Utils.captchaBatch(30000);
 		
-		
+////		
+//		Captcha c = Captcha.generateBaseline(7);
+//		c.denoise();
+//		List<Box> boxes = Utils.slidingWindow(c.getImg(), net);
+//		c.showImg();
+//		
+//		
+//		System.out.println(boxes.size());
+//		
+//		List<Box> filtered = Utils.nms(boxes, 0.6);
+//		System.out.println(filtered.size());
+//		
+//		org.opencv.core.Mat m = c.getImg();
+//		for(Box b: filtered)
+//		{
+//			Core.rectangle(m, new Point(b.x1, b.y1), new Point(b.x2, b.y2), new Scalar(100,100,100,1));
+//		}
+//		Imshow im = new Imshow("");
+//		im.showImage(m);
 		
 		
 //		System.exit(0);
-//		
+	
 //		double[] results = net.forward(img);
-//		System.out.println(Arrays.toString(results));
 //		
 //		ArrayList<Pair> list = new ArrayList<Pair>();
 //		for(int i = 0; i < results.length; i++)
