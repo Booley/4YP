@@ -6,8 +6,8 @@ import caffe
 SIZE = 30 # fixed size to all images
 
 # be sure to change for every net
-img_path = '../images/letters/'
-file_labels = '../letter_labels.txt'
+img_path = '../../images/letters/'
+file_labels = 'letter_labels.txt'
 outputH5_prefix = 'train_letters'
 
 
