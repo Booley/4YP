@@ -10,6 +10,7 @@ import org.opencv.core.Core;
 import org.opencv.core.CvType;
 import org.opencv.core.Mat;
 import org.opencv.core.Point;
+import org.opencv.core.Rect;
 import org.opencv.core.Scalar;
 import org.opencv.core.Size;
 import org.opencv.imgproc.Imgproc;
@@ -401,5 +402,15 @@ public class Captcha
 		Core.merge(list, m);
 
 		return m;
+	}
+	
+	// (x, y) = middle of roi
+	public Mat subregion(int x, int y, int boxWidth, int boxHeight)
+	{
+		Mat sub = new Mat();
+		Rect roi = new Rect(x, y, boxWidth, boxHeight);
+		
+		sub = img.submat(roi);
+		return sub;
 	}
 }

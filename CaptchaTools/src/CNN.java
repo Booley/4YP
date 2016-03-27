@@ -39,6 +39,7 @@ public class CNN
 		scores = null;
 	}
 	
+	// NOTE: uses javacpp Mat type
 	// be careful about num channels
 	// forward pass and cache scores
 	public double[] forward(Mat img)
@@ -64,6 +65,36 @@ public class CNN
 		return results;
 	}
 	
+	// return normalized copy of net output
+	// NOTE: unity normalization -> min probability is always 0.05 
+	public double[] normalize()
+	{
+		double[] results = new double[scores.length];
+		
+		// perform max-min normalization
+		double min = Integer.MAX_VALUE;
+		double max = Integer.MIN_VALUE;
+		for(double v: scores)
+		{
+			min = Math.min(min, v);
+			max = Math.max(max, v);
+		}
+		
+		double sum = 0;
+		for (int i = 0; i < results.length; i++)
+		{
+			results[i] = Math.max(.05, (scores[i] - min) / (max - min));
+			sum += results[i];
+		}
+		
+		for (int i = 0; i < results.length; i++)
+		{
+			results[i] /= sum;
+		}
+		
+		return results;
+	}
+	
 	public static Mat convertFast(BufferedImage bufferedImage) {
 	    byte[] data = ((DataBufferByte) bufferedImage.getRaster().getDataBuffer()).getData();
 	    return new Mat(data, false).reshape(bufferedImage.getColorModel().getNumComponents(), bufferedImage.getHeight());
@@ -78,7 +109,14 @@ public class CNN
 		return forward(tmp);
 	}
 	
-	// must perform forward pass first
+	public double[] forward(org.opencv.core.Mat m)
+	{
+		Mat tmp = new Mat(new BytePointer()) {{ address = m.getNativeObjAddr(); }};
+		
+		return forward(tmp);
+	}
+	
+	// must perform forward pass first!!!
 	public Pair[] getTop(int n)
 	{
 		ArrayList<Pair> list = new ArrayList<Pair>();

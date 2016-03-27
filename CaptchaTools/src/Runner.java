@@ -39,9 +39,14 @@ public class Runner
 		int imnum = 16000;
 		Mat img = opencv_imgcodecs.imread(String.format("models/letters_many/image%06d.png", imnum));
 //		System.out.println(img);
-		CNN net = new CNN(model, weights);
+//		CNN net = new CNN(model, weights);
 		
-		Utils.captchaBatch(30000);
+//		Utils.captchaBatch(30000);
+//		System.out.println(img);
+		Captcha c = Captcha.generateBaseline(7);
+		CNN waveNet = new CNN("models/num_net_deploy.prototxt", "models/snapshots/num_net_weights.caffemodel");
+		double[] output = waveNet.forward(c);
+		System.out.println(Arrays.toString(waveNet.normalize()));
 		
 ////		
 //		Captcha c = Captcha.generateBaseline(7);
