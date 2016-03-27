@@ -1,5 +1,5 @@
 #!/bin/bash
-#PBS -N caffe-train-position
+#PBS -N caffe-train-wave
 #PBS -M bo.moon@st-annes.ox.ac.uk
 #PBS -m abe
 #PBS -q parallel
@@ -11,4 +11,4 @@ export LD_LIBRARY_PATH=${LD_LIBRARY_PATH}:/lib:/scratch/bhmoon/Documents/libs/li
 
 
 cd /scratch/bhmoon/4YP/CaptchaTools/models
-/scratch/bhmoon/caffe/build/tools/caffe.bin train -solver=position_solver.prototxt
+/scratch/bhmoon/caffe/build/tools/caffe.bin train -solver=wave_solver.prototxt
