@@ -23,8 +23,16 @@
 ;; (def a (Captcha/generateBaseline 1))
 ;; (vec (.forward net a))
 
-
-
+(def deploy-path "/Users/bomoon/Documents/4YP/CaptchaTools/models/")
+(def wave-net (CNN. "/Users/bomoon/Documents/4YP/CaptchaTools/models/wave_net_deploy.prototxt"
+                    "/Users/bomoon/Documents/4YP/CaptchaTools/models/snapshots/wave_net_weights.caffemodel") )
+(def letter-net (CNN. "/Users/bomoon/Documents/4YP/CaptchaTools/models/letter_net_deploy.prototxt"
+                    "/Users/bomoon/Documents/4YP/CaptchaTools/models/snapshots/letter_net_weights.caffemodel") )
+(def position-net (CNN. "/Users/bomoon/Documents/4YP/CaptchaTools/models/position_net_deploy.prototxt"
+                    "/Users/bomoon/Documents/4YP/CaptchaTools/models/snapshots/position_net_weights.caffemodel") )
+(def num-net (CNN. "/Users/bomoon/Documents/4YP/CaptchaTools/models/num_net_deploy.prototxt"
+                    "/Users/bomoon/Documents/4YP/CaptchaTools/models/snapshots/num_net_weights.caffemodel") )
+(def forward #(.forward %1 %2))
 
 ;; (def alphabet "ABCDEFGH/IJKLMNOPQRSTUVWXXYZ                             ")
 (def alphabet "ABCDEFGHIJKLMNOPQRSTUVWXXYZabcdefghijklmnopqrstuvwxyz")
@@ -139,71 +147,99 @@
 (defn get-coords [n limit] (repeatedly n #(sample (uniform-discrete 0 limit))))
 
 
+
+;; neural net wrappers
+
+;; returns probabilities for classes 3-9
+(defn predict-num-letters [captcha]
+  (let [weights (do (.forward num-net captcha)
+                    (.normalize num-net))]
+    (vec weights)
+))
+
+(with-primitive-procedures [forward]
+(defm get-net-output [c]
+  (let [num-letters (+ 3 (adaptive-sample (uniform-discrete 0 7)
+                           discrete
+                           #(let [weights (do (.forward num-net %) (.normalize num-net))] [(vec weights)])
+                           identity
+                           c))
+        wave-net-output (let [weights (vec (forward wave-net c))]
+                          {:amplitude (max 0 (first weights)),
+                           :period (max 0 (second weights)),
+                           :shift (max 0 (nth weights 2))})
+        amplitude (adaptive-sample (uniform-discrete 0 12)
+                     normal
+                     #(let [mu (:amplitude wave-net-output) std 20 _ %] [mu std])
+                     identity
+                     nil)
+        period (adaptive-sample (uniform-discrete 190 500)
+                     normal
+                     #(let [mu (:period wave-net-output) std 30 _ %] [mu std])
+                     identity
+                     nil)
+        shift (adaptive-sample (uniform-discrete 0 period)
+                     normal
+                     #(let [mu (:shift wave-net-output) std 100 _ %] [mu std])
+                     identity
+                     nil)]
+    {:n num-letters, :a amplitude, :p period, :s shift})))
+
 (with-primitive-procedures [eye join generateBaseline makeCaptcha split dot hypot get-coords equalizeHist ripple
                             drawLetter globalBlur getPixels reduce-dim scalar-multiply clear shrink blurBaseline
-                            nextInt makeRandom makeRandomSeed outside-neighborhood nextInt drawLine drawText dilate]
-(defquery guess-captcha [baseline-captcha ripple-proposal]
-  (let [num-letters (sample (uniform-discrete 4 12)) ;7
-        is-present (repeatedly num-letters #(sample (flip 0.5)))
-;;         is-present (repeat num-letters true)
+                            nextInt drawLine drawText dilate predict-num-letters forward]
+(defquery guess-captcha [baseline-captcha]
+  (let [p (get-net-output baseline-captcha)
+        num-letters (:n p)
+        amplitude (:a p)
+        period (:p p)
+        shift (:s p)
 
-        letters (repeatedly num-letters #(str (nth alphabet (sample (uniform-discrete 0 (count alphabet))))))
-;;         text (join letters)
+        ;; note x-pos is not sampled here!!!
+        y-pos (sample (uniform-discrete 0 LENGTH))
 
-        x-pos (repeatedly num-letters #(sample (uniform-discrete 0 WIDTH)))
-        y-pos (repeat num-letters (sample (uniform-discrete 0 LENGTH)))
+        ;; not latent variables, but include to change if necessary
+        is-present true
+        color 255
+        theta 0
 
-;;         points (get-rand-points is-present num-letters 15 (- WIDTH 15) 15 (- LENGTH 15) 15)
-;;         x-pos (map #(:x %) points)
-;;         y-pos (map #(:y %) points)
+        rendered-sigma (sample (uniform-continuous 0.4 2))
+        baseline-sigma (sample (uniform-continuous 1 2))
 
-;;         x-pos (sample (uniform-discrete 0 WIDTH))
-;;         y-pos (sample (uniform-discrete 0 LENGTH))
-;;         spacing (sample (uniform-continuous 0.7 0.9))
+        letter-params (do (clear rendered-captcha)
+                    (loop [i 0
+                           x-pos []
+                           letters []
+                           thickness []
+                           letter-sigma []
+                           scale []]
+                      (if (= i num-letters) {:x-pos x-pos, :letters letters, :thickness thickness, :letter-sigma letter-sigma, :scale scale}
+                        (let [_x-pos (sample (uniform-discrete 0 WIDTH))
+                              _index (adaptive-sample (uniform-discrete 0 (count alphabet))
+                                         discrete
+                                         #(let [weights (do (.forward letter-net %)
+                                                            (.normalize num-net))] [(vec weights)])
+                                         identity
+                                         baseline-captcha)
+                              _letter (str (nth alphabet _index))
+                              _thickness (sample (uniform-discrete 2 6))
+                              _letter-sigma (sample (uniform-continuous 0 2))
+                              _scale (sample (uniform-discrete 2 4))]
 
-;;         thetas 0
-;;         thickness (sample (uniform-discrete 2 5))
-;;         scale (sample (uniform-discrete 1 4))
+                          (drawLetter rendered-captcha _letter _x-pos y-pos _scale theta _thickness
+                                      _letter-sigma is-present color)
+                          (recur (inc i) (conj x-pos _x-pos) (conj letters _letter) (conj thickness _thickness)
+                                 (conj letter-sigma _letter-sigma) (conj scale _scale))))))
+        x-pos (:x-pos letter-params)
+        letters (:letters letter-params)
+        thickness (:thickness letter-params)
+        letter-sigmas (:letter-sigma letter-params)
+        scale (:scale letter-params)]
 
-;;         amplitude (sample (uniform-discrete 0 12))
-;;         period (sample (uniform-continuous 190 500))
-;;         shift (sample (uniform-discrete 0 period))
-        amplitude (sample (normal (first ripple-proposal) 20))
-        period (sample (normal (second ripple-proposal) 30))
-        shift (sample (normal (nth ripple-proposal 2) 100))
-
-        scale (repeatedly num-letters #(sample (uniform-discrete 2 4)))
-
-        color (repeat num-letters 255)
-
-        do-dilate true ;(sample (flip 0.5))
-
-        thetas (repeat num-letters 0)
-;;         thetas (repeatedly num-letters #(sample (uniform-continuous -20 20))) ;-30 30
-
-        thickness (repeatedly num-letters #(sample (uniform-discrete 2 6)))
-
-        letter-sigmas (repeatedly num-letters #(sample (uniform-continuous 0 2)))
-;;         letter-sigmas (repeatedly num-letters #(* 7 (sample (beta 1 2))))
-;;         letter-sigmas (repeat num-letters 0.1)
-
-
-;;         rendered-sigma 0.8
-;;         baseline-sigma 0.0
-        rendered-sigma (sample (uniform-continuous 0.4 2)) ;1.4;(* 8 (sample (beta 1 2)))
-        baseline-sigma (sample (uniform-continuous 1 2)) ;1.2;(* 8 (sample (beta 1 2)))
-;;         baseline-sigma 0.01
-        ]
-    (clear rendered-captcha)
-
-;;     (drawText rendered-captcha text x-pos y-pos scale thickness spacing rendered-sigma)
-    (doall (map #(drawLetter rendered-captcha %1 %2 %3 %4 %5 %6 %7 %8 %9)
-                letters x-pos y-pos scale thetas thickness letter-sigmas is-present color))
+    ;; perform global operations
     (globalBlur rendered-captcha rendered-sigma)
     (blurBaseline baseline-captcha baseline-sigma)
     (ripple rendered-captcha amplitude period shift)
-
-;;     (if do-dilate (dilate rendered-captcha))
 
     (shrink rendered-captcha)
     (shrink baseline-captcha)
@@ -211,33 +247,35 @@
     (let [rendered-pixels (reduce-dim (vec (getPixels rendered-captcha)))
           baseline-pixels (reduce-dim (vec (getPixels baseline-captcha)))
           std (* 100 (sample (uniform-continuous 9 20))) ; 100 7 25
-          error  (hypot rendered-pixels baseline-pixels)]
+          ]
       (doall (map #(observe (normal %1 std) %2) rendered-pixels baseline-pixels)) ;2500 ; 4066
-      (observe (flip 1) (> (min (apply min x-pos) (apply min y-pos)) 10))
+;;       (observe (flip 1) (> (min (apply min x-pos) (apply min y-pos)) 10))
 
       (predict :text letters)
       (predict :x x-pos)
       (predict :y y-pos)
       (predict :scale scale)
-      (predict :theta thetas)
+      (predict :theta theta)
       (predict :thickness thickness)
       (predict :sigma letter-sigmas)
       (predict :amplitude amplitude)
       (predict :period period)
       (predict :shift shift)
-;;       (predict :spacing spacing)
       (predict :color color)
       (predict :is-present is-present)
-      (predict :error error)
 ))))
 
 
-;; (def baseline (Captcha/generateBaseline 7))
+;; (def baseline (Captcha/generateBaseline 1))
 (def baseline (Captcha. LENGTH WIDTH))
-(drawText baseline "boron" 10 40 3 2 0.8 0)
+(drawText baseline "wave" 10 40 3 2 0.8 0)
 (ripple baseline 10 200 10)
 
+(predict-num-letters baseline)
+(def foo #(let [a 1]
+             0.5))
 
+;; (sample (discrete #((let [] [0.5 0.5]))))
 ;; (.saveImg baseline)
 
 (.denoise baseline)
@@ -246,14 +284,32 @@
 (globalBlur baseline 1)
 ;; (.showImg baseline)
 
+(sample (discrete (predict-num-letters baseline)))
 
-;; (def ripple-proposal (vec (.forward net baseline)))
+(vec (.forward num-net baseline))
+
+
+(def ripple-proposal (vec (.forward wave-net baseline)))
 ;; ripple-proposal
 
-;; (def stime (System/currentTimeMillis))
+(def stime (System/currentTimeMillis))
 ;; (def sampler (doquery :rmh guess-captcha [baseline ripple-proposal] :alpha 1 :sigma 4)) ; 0.8 3.3
-;; (def sample-rate 1000)
-;; (def max-runs 10000)
+
+(def sampler (doquery :smc guess-captcha [baseline] :number-of-particles 101))
+;; sampler
+(get-predicts (nth sampler 100))
+
+(defn render-predicts [c]
+  (let [captcha (Captcha. LENGTH WIDTH)]
+    (doall (map #(drawLetter captcha %1 %2 (:y c) %3 0 %4 %5 true 255)
+                  (:text c) (:x c) (:scale c) (:thickness c) (:sigma c)))
+    (ripple captcha (:amplitude c) (:period c) (:shift c))
+    (.saveImg captcha)))
+
+(render-predicts (get-predicts (nth sampler 100)))
+
+;; (def sample-rate 1)
+;; (def max-runs 100)
 ;; (loop [num-tries 1] ; can also append likelihoods
 ;;   (if (> num-tries  (* 1 max-runs))
 ;;     1
@@ -271,7 +327,7 @@
 ;; (float (/ (- (System/currentTimeMillis) stime) 60000))
 
 
-
+(+ 1 1)
 
 ;; (def likelihoods (map get-log-weight (take max-runs sampler)))
 ;; (save-weights "weights.txt" likelihoods)
