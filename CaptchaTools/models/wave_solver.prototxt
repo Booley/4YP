@@ -11,7 +11,7 @@ test_iter: 10
 test_interval: 50
 
 # The base learning rate, momentum and the weight decay of the network.
-base_lr: 0.0001
+base_lr: 0.000001
 momentum: 0.9
 weight_decay: 0.000005
 
