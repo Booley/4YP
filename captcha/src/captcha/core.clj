@@ -272,8 +272,7 @@
 (ripple baseline 10 200 10)
 
 (predict-num-letters baseline)
-(def foo #(let [a 1]
-             0.5))
+
 
 ;; (sample (discrete #((let [] [0.5 0.5]))))
 ;; (.saveImg baseline)
@@ -282,22 +281,16 @@
 
 (.dilate baseline)
 (globalBlur baseline 1)
-;; (.showImg baseline)
-
-(sample (discrete (predict-num-letters baseline)))
-
-(vec (.forward num-net baseline))
+(.showImg baseline)
 
 
-(def ripple-proposal (vec (.forward wave-net baseline)))
-;; ripple-proposal
 
 (def stime (System/currentTimeMillis))
 ;; (def sampler (doquery :rmh guess-captcha [baseline ripple-proposal] :alpha 1 :sigma 4)) ; 0.8 3.3
 
-(def sampler (doquery :smc guess-captcha [baseline] :number-of-particles 101))
+(def sampler (doquery :smc guess-captcha [baseline] :number-of-particles 2))
 ;; sampler
-(get-predicts (nth sampler 100))
+(get-predicts (nth sampler 1))
 
 (defn render-predicts [c]
   (let [captcha (Captcha. LENGTH WIDTH)]
@@ -306,7 +299,7 @@
     (ripple captcha (:amplitude c) (:period c) (:shift c))
     (.saveImg captcha)))
 
-(render-predicts (get-predicts (nth sampler 100)))
+(render-predicts (get-predicts (nth sampler 1)))
 
 ;; (def sample-rate 1)
 ;; (def max-runs 100)
