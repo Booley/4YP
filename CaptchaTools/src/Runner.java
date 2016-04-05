@@ -34,8 +34,8 @@ public class Runner
 //		Utils.letterBatch("letter_labels.txt");
 		
 //		
-		String model = "models/letter_net_deploy.prototxt"; 
-		String weights = "models/snapshots/letter_net_iter_17600.caffemodel";
+		String model = "models/position_net_deploy.prototxt"; 
+		String weights = "models/snapshots/position_net_weights.caffemodel";
 		int imnum = 16000;
 		Mat img = opencv_imgcodecs.imread(String.format("models/letters_many/image%06d.png", imnum));
 //		System.out.println(img);
@@ -44,9 +44,10 @@ public class Runner
 //		Utils.captchaBatch(30000);
 //		System.out.println(img);
 		Captcha c = Captcha.generateBaseline(7);
-		CNN waveNet = new CNN("models/num_net_deploy.prototxt", "models/snapshots/num_net_weights.caffemodel");
-		double[] output = waveNet.forward(c);
-		System.out.println(Arrays.toString(waveNet.normalize()));
+		CNN waveNet = new CNN(model, weights);
+		
+		double[] output = waveNet.forward(c.subregion(20, 20, 30, 30));
+		System.out.println(Arrays.toString(output));
 		
 ////		
 //		Captcha c = Captcha.generateBaseline(7);

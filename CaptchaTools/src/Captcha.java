@@ -23,6 +23,7 @@ public class Captcha
 	}
 	public int height; //70
 	public int width; //150
+	public int originalHeight, originalWidth;
 	private static final int FONT = Core.FONT_HERSHEY_PLAIN;
 	private static final Scalar COLOR = new Scalar(255);
 	private static final Size KSIZE = new Size(5, 5);
@@ -39,6 +40,8 @@ public class Captcha
 	{
 		this.height = height;
 		this.width = width;
+		originalHeight = height;
+		originalWidth = width;
 		
 		img = Mat.zeros(height, width, CvType.CV_8UC1);
 	}
@@ -48,6 +51,8 @@ public class Captcha
 	{
 		this.height = height;
 		this.width = width;
+		originalHeight = height;
+		originalWidth = width;
 		
 		BufferedImage bi = ImageIO.read(new File(file));
 		img = Utils.bufferedImageToMat(bi);
@@ -65,6 +70,8 @@ public class Captcha
 		BufferedImage bi = ImageIO.read(new File(file));
 		height = bi.getHeight();
 		width = bi.getWidth();
+		originalHeight = height;
+		originalWidth = width;
 		
 		img = Utils.bufferedImageToMat(bi);
 		
@@ -133,7 +140,7 @@ public class Captcha
 	
 	public void clear()
 	{
-		img = Mat.zeros(height, width, CvType.CV_8UC1);
+		img = Mat.zeros(originalHeight, originalWidth, CvType.CV_8UC1);
 	}
 	
 	public void drawLetter(String letter, double x, double y, double scale, double angle, int thickness, double sigma)
@@ -388,6 +395,8 @@ public class Captcha
 	
 	public void resize(int newHeight, int newWidth)
 	{
+		height = newHeight;
+		width = newWidth;
 		Size sz = new Size(newWidth, newHeight); //reverse
 		Imgproc.resize(img, img, sz);
 	}
@@ -404,13 +413,22 @@ public class Captcha
 		return m;
 	}
 	
-	// (x, y) = middle of roi
+	// (x, y) = upper left corner of roi
+	// if box exceeds image boundary, crops to just the border
 	public Mat subregion(int x, int y, int boxWidth, int boxHeight)
 	{
 		Mat sub = new Mat();
-		Rect roi = new Rect(x, y, boxWidth, boxHeight);
+		Rect roi = new Rect(x, y, Math.min(boxWidth, width), Math.min(boxHeight, height));
 		
-		sub = img.submat(roi);
-		return sub;
+		sub = img.submat(roi).clone();
+		
+		ArrayList<Mat> list = new ArrayList<Mat>();
+		list.add(sub);
+		list.add(sub);
+		list.add(sub);
+		Mat m = new Mat();
+		Core.merge(list, m);
+		
+		return m;
 	}
 }

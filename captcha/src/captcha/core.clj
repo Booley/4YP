@@ -66,6 +66,13 @@
 (def ripple #(.ripple %1 %2 %3 %4))
 (def dilate #(.dilate %))
 
+(defn render-predicts [c]
+  (let [captcha (Captcha. LENGTH WIDTH)]
+    (doall (map #(drawLetter captcha %1 %2 (:y c) %3 0 %4 %5 true 255)
+                  (:text c) (:x c) (:scale c) (:thickness c) (:sigma c)))
+    (ripple captcha (:amplitude c) (:period c) (:shift c))
+    (.saveImg captcha)))
+
 ; generate random matrix for feature reduction
 (def mat (m/new-sparse-array [new-dim-size (* SHRINK_LENGTH SHRINK_WIDTH)]))
 (defn create-sparse-mat []
@@ -185,6 +192,23 @@
                      nil)]
     {:n num-letters, :a amplitude, :p period, :s shift})))
 
+(defn round-range [upper lower n]
+  (min (max lower n) upper))
+
+(defn subregion [captcha a b c d] (.subregion captcha a b c d))
+
+(with-primitive-procedures [subregion forward]
+(defm sample-x-pos [baseline-captcha x-pos y-pos]
+  (let [weights (vec (forward position-net (subregion baseline-captcha 20 20 15 15)))]
+  (adaptive-sample (uniform-discrete 0 WIDTH)
+                   normal
+                   #(let [_ %
+                          mu (first weights)
+                          std 2]
+                      [mu std])
+                   identity
+                   nil))))
+
 (with-primitive-procedures [eye join generateBaseline makeCaptcha split dot hypot get-coords equalizeHist ripple
                             drawLetter globalBlur getPixels reduce-dim scalar-multiply clear shrink blurBaseline
                             nextInt drawLine drawText dilate predict-num-letters forward]
@@ -214,7 +238,7 @@
                            letter-sigma []
                            scale []]
                       (if (= i num-letters) {:x-pos x-pos, :letters letters, :thickness thickness, :letter-sigma letter-sigma, :scale scale}
-                        (let [_x-pos (sample (uniform-discrete 0 WIDTH))
+                        (let [_x-pos (sample-x-pos baseline-captcha x-pos y-pos)
                               _index (adaptive-sample (uniform-discrete 0 (count alphabet))
                                          discrete
                                          #(let [weights (do (.forward letter-net %)
@@ -281,7 +305,7 @@
 
 (.dilate baseline)
 (globalBlur baseline 1)
-(.showImg baseline)
+;; (.showImg baseline)
 
 
 
@@ -289,15 +313,9 @@
 ;; (def sampler (doquery :rmh guess-captcha [baseline ripple-proposal] :alpha 1 :sigma 4)) ; 0.8 3.3
 
 (def sampler (doquery :smc guess-captcha [baseline] :number-of-particles 2))
-;; sampler
 (get-predicts (nth sampler 1))
 
-(defn render-predicts [c]
-  (let [captcha (Captcha. LENGTH WIDTH)]
-    (doall (map #(drawLetter captcha %1 %2 (:y c) %3 0 %4 %5 true 255)
-                  (:text c) (:x c) (:scale c) (:thickness c) (:sigma c)))
-    (ripple captcha (:amplitude c) (:period c) (:shift c))
-    (.saveImg captcha)))
+
 
 (render-predicts (get-predicts (nth sampler 1)))
 
