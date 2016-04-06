@@ -16,12 +16,9 @@
 (import java.io.PrintWriter)
 (import java.util.Random)
 
-;; (import org.bytedeco.javacpp.opencv_imgproc)
 
 (def net (CNN. "/Users/bomoon/Documents/Eclipse Workspace/OpenCVTest/models/captchanet_deploy.prototxt" "/Users/bomoon/Documents/Eclipse Workspace/OpenCVTest/models/snapshots/captchanet_iter_100.caffemodel"))
 
-;; (def a (Captcha/generateBaseline 1))
-;; (vec (.forward net a))
 
 (def deploy-path "/Users/bomoon/Documents/4YP/CaptchaTools/models/")
 (def wave-net (CNN. "/Users/bomoon/Documents/4YP/CaptchaTools/models/wave_net_deploy.prototxt"
@@ -33,6 +30,7 @@
 (def num-net (CNN. "/Users/bomoon/Documents/4YP/CaptchaTools/models/num_net_deploy.prototxt"
                     "/Users/bomoon/Documents/4YP/CaptchaTools/models/snapshots/num_net_weights.caffemodel") )
 (def forward #(.forward %1 %2))
+(def normalize #(.normalize %))
 
 ;; (def alphabet "ABCDEFGH/IJKLMNOPQRSTUVWXXYZ                             ")
 (def alphabet "ABCDEFGHIJKLMNOPQRSTUVWXXYZabcdefghijklmnopqrstuvwxyz")
@@ -65,6 +63,7 @@
 (def drawText #(.drawText %1 %2 %3 %4 %5 %6 %7 %8))
 (def ripple #(.ripple %1 %2 %3 %4))
 (def dilate #(.dilate %))
+(def resetBaseline #(.resetBaseline %))
 
 (defn render-predicts [c]
   (let [captcha (Captcha. LENGTH WIDTH)]
@@ -199,7 +198,9 @@
 
 (with-primitive-procedures [subregion forward]
 (defm sample-x-pos [baseline-captcha x-pos y-pos]
-  (let [weights (vec (forward position-net (subregion baseline-captcha 20 20 15 15)))]
+  (let [box-dim 15
+        crop-x (+ box-dim (if (zero? (count x-pos)) -15 (last x-pos)))
+        weights (vec (forward position-net (subregion baseline-captcha crop-x 0 (- WIDTH crop-x) LENGTH)))]
   (adaptive-sample (uniform-discrete 0 WIDTH)
                    normal
                    #(let [_ %
@@ -209,9 +210,22 @@
                    identity
                    nil))))
 
+(with-primitive-procedures [subregion forward normalize]
+(defm sample-index [baseline-captcha x-pos y-pos]
+  (let [box-dim 15
+        new-x (+ box-dim (if (zero? (count x-pos)) 0 (last x-pos)))
+        weights (do (forward letter-net (subregion baseline-captcha new-x y-pos box-dim box-dim))
+                    (normalize num-net))]
+  (adaptive-sample (uniform-discrete 0 (count alphabet))
+                   discrete
+                   #(let [_ %]
+                      [(vec weights)])
+                   identity
+                   nil))))
+
 (with-primitive-procedures [eye join generateBaseline makeCaptcha split dot hypot get-coords equalizeHist ripple
                             drawLetter globalBlur getPixels reduce-dim scalar-multiply clear shrink blurBaseline
-                            nextInt drawLine drawText dilate predict-num-letters forward]
+                            nextInt drawLine drawText dilate predict-num-letters forward round-range resetBaseline]
 (defquery guess-captcha [baseline-captcha]
   (let [p (get-net-output baseline-captcha)
         num-letters (:n p)
@@ -230,7 +244,7 @@
         rendered-sigma (sample (uniform-continuous 0.4 2))
         baseline-sigma (sample (uniform-continuous 1 2))
 
-        letter-params (do (clear rendered-captcha)
+        letter-params (do (clear rendered-captcha) (resetBaseline baseline-captcha)
                     (loop [i 0
                            x-pos []
                            letters []
@@ -238,18 +252,13 @@
                            letter-sigma []
                            scale []]
                       (if (= i num-letters) {:x-pos x-pos, :letters letters, :thickness thickness, :letter-sigma letter-sigma, :scale scale}
-                        (let [_x-pos (sample-x-pos baseline-captcha x-pos y-pos)
-                              _index (adaptive-sample (uniform-discrete 0 (count alphabet))
-                                         discrete
-                                         #(let [weights (do (.forward letter-net %)
-                                                            (.normalize num-net))] [(vec weights)])
-                                         identity
-                                         baseline-captcha)
+                        (let [_x-pos (round-range WIDTH 0 (sample-x-pos baseline-captcha x-pos y-pos))
+                              _index (sample-index baseline-captcha x-pos y-pos)
                               _letter (str (nth alphabet _index))
                               _thickness (sample (uniform-discrete 2 6))
                               _letter-sigma (sample (uniform-continuous 0 2))
                               _scale (sample (uniform-discrete 2 4))]
-
+                          (println i)
                           (drawLetter rendered-captcha _letter _x-pos y-pos _scale theta _thickness
                                       _letter-sigma is-present color)
                           (recur (inc i) (conj x-pos _x-pos) (conj letters _letter) (conj thickness _thickness)
@@ -305,6 +314,7 @@
 
 (.dilate baseline)
 (globalBlur baseline 1)
+(.storeBaseline baseline)
 ;; (.showImg baseline)
 
 
@@ -312,12 +322,13 @@
 (def stime (System/currentTimeMillis))
 ;; (def sampler (doquery :rmh guess-captcha [baseline ripple-proposal] :alpha 1 :sigma 4)) ; 0.8 3.3
 
-(def sampler (doquery :smc guess-captcha [baseline] :number-of-particles 2))
+(def sampler (doquery :lmh guess-captcha [baseline]))
+
+(def num-particles 20)
+;; (def sampler (doquery :smc guess-captcha [baseline] :number-of-particles num-particles))
 (get-predicts (nth sampler 1))
 
-
-
-(render-predicts (get-predicts (nth sampler 1)))
+(render-predicts (get-predicts (nth sampler (dec num-particles))))
 
 ;; (def sample-rate 1)
 ;; (def max-runs 100)

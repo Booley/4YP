@@ -32,7 +32,7 @@ public class Captcha
 	
 	private Mat img;
 	
-	public static Mat baselineCopy; //why static?
+	public Mat baselineCopy; //why static?
 //	public static boolean madeBaseline = false;
 	
 	// create a blank captcha
@@ -81,6 +81,18 @@ public class Captcha
 		
 		resize(height, width);
 		baselineCopy = img.clone();
+	}
+	
+	public void storeBaseline()
+	{
+		baselineCopy = img.clone();
+	}
+	
+	public void resetBaseline()
+	{
+		img = baselineCopy.clone();
+		height = originalHeight;
+		width = originalWidth;
 	}
 	
 	public static void invert(Mat m)
@@ -417,8 +429,13 @@ public class Captcha
 	// if box exceeds image boundary, crops to just the border
 	public Mat subregion(int x, int y, int boxWidth, int boxHeight)
 	{
+		System.out.printf("Image: (%d %d) \t Box: (%d %d %d %d)\n", width, height, x, y, Math.min(boxWidth, Math.max(0, width - x)), Math.min(boxHeight, Math.max(0, height - y)));
+		if(Math.min(boxWidth, Math.max(0, width - x)) < 0)
+		{
+			System.out.printf("%d %d\n", boxWidth, width - x);
+		}
 		Mat sub = new Mat();
-		Rect roi = new Rect(x, y, Math.min(boxWidth, width), Math.min(boxHeight, height));
+		Rect roi = new Rect(x, y, Math.min(boxWidth, Math.max(0, width - x)), Math.min(boxHeight, Math.max(0, height - y)));
 		
 		sub = img.submat(roi).clone();
 		
