@@ -258,7 +258,7 @@
                               _thickness (sample (uniform-discrete 2 6))
                               _letter-sigma (sample (uniform-continuous 0 2))
                               _scale (sample (uniform-discrete 2 4))]
-                          (println i)
+
                           (drawLetter rendered-captcha _letter _x-pos y-pos _scale theta _thickness
                                       _letter-sigma is-present color)
                           (recur (inc i) (conj x-pos _x-pos) (conj letters _letter) (conj thickness _thickness)
@@ -322,10 +322,10 @@
 (def stime (System/currentTimeMillis))
 ;; (def sampler (doquery :rmh guess-captcha [baseline ripple-proposal] :alpha 1 :sigma 4)) ; 0.8 3.3
 
-;; (def sampler (doquery :lmh guess-captcha [baseline]))
+(def sampler (doquery :lmh guess-captcha [baseline]))
 
 (def num-particles 10)
-(def sampler (doquery :smc guess-captcha [baseline] :number-of-particles num-particles))
+;; (def sampler (doquery :smc guess-captcha [baseline] :number-of-particles num-particles))
 (get-predicts (nth sampler 1))
 
 (render-predicts (get-predicts (nth sampler (dec num-particles))))

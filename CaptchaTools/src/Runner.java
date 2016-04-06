@@ -34,10 +34,10 @@ public class Runner
 //		Utils.letterBatch("letter_labels.txt");
 		
 //		
-		String model = "models/num_net_deploy.prototxt"; 
+		String model = "models/wave_net_deploy.prototxt"; 
 		String weights = "models/snapshots/wave_net_weights.caffemodel";
 		
-		int imnum = 1;
+		int imnum = 5;
 		Mat img = opencv_imgcodecs.imread(String.format("images/captchas/image%06d.png", imnum));
 //		System.out.println(img);
 //		CNN net = new CNN(model, weights);
