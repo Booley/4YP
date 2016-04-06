@@ -34,19 +34,22 @@ public class Runner
 //		Utils.letterBatch("letter_labels.txt");
 		
 //		
-		String model = "models/position_net_deploy.prototxt"; 
-		String weights = "models/snapshots/position_net_weights.caffemodel";
-		int imnum = 16000;
-		Mat img = opencv_imgcodecs.imread(String.format("models/letters_many/image%06d.png", imnum));
+		String model = "models/num_net_deploy.prototxt"; 
+		String weights = "models/snapshots/wave_net_weights.caffemodel";
+		
+		int imnum = 1;
+		Mat img = opencv_imgcodecs.imread(String.format("images/captchas/image%06d.png", imnum));
 //		System.out.println(img);
 //		CNN net = new CNN(model, weights);
 		
 //		Utils.captchaBatch(30000);
 //		System.out.println(img);
 		Captcha c = Captcha.generateBaseline(7);
+//		c.showImg();
+		
 		CNN waveNet = new CNN(model, weights);
 		
-		double[] output = waveNet.forward(c.subregion(20, 20, 30, 30));
+		double[] output = waveNet.forward(img);
 		System.out.println(Arrays.toString(output));
 		
 ////		

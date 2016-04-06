@@ -322,10 +322,10 @@
 (def stime (System/currentTimeMillis))
 ;; (def sampler (doquery :rmh guess-captcha [baseline ripple-proposal] :alpha 1 :sigma 4)) ; 0.8 3.3
 
-(def sampler (doquery :lmh guess-captcha [baseline]))
+;; (def sampler (doquery :lmh guess-captcha [baseline]))
 
-(def num-particles 20)
-;; (def sampler (doquery :smc guess-captcha [baseline] :number-of-particles num-particles))
+(def num-particles 10)
+(def sampler (doquery :smc guess-captcha [baseline] :number-of-particles num-particles))
 (get-predicts (nth sampler 1))
 
 (render-predicts (get-predicts (nth sampler (dec num-particles))))

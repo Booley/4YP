@@ -28,6 +28,13 @@ layer {
 }
 
 layer {
+  name: "relu1"
+  type: "ReLU"
+  bottom: "conv1"
+  top: "conv1"
+}
+
+layer {
   name: "pool1"
   type: "Pooling"
   pooling_param { 
@@ -61,6 +68,13 @@ layer {
 }
 
 layer {
+  name: "relu2"
+  type: "ReLU"
+  bottom: "conv2"
+  top: "conv2"
+}
+
+layer {
   name: "ip1"
   type: "InnerProduct"
   param { lr_mult: 1 }
@@ -89,6 +103,13 @@ layer {
 }
 
 layer {
+  name: "relu3"
+  type: "ReLU"
+  bottom: "ip1"
+  top: "ip1"
+}
+
+layer {
   name: "ip2"
   type: "InnerProduct"
   param { lr_mult: 1 }
@@ -103,6 +124,13 @@ layer {
     }
   }
   bottom: "ip1"
+  top: "ip2"
+}
+
+layer {
+  name: "relu4"
+  type: "ReLU"
+  bottom: "ip2"
   top: "ip2"
 }
 

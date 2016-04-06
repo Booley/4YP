@@ -429,11 +429,11 @@ public class Captcha
 	// if box exceeds image boundary, crops to just the border
 	public Mat subregion(int x, int y, int boxWidth, int boxHeight)
 	{
-		System.out.printf("Image: (%d %d) \t Box: (%d %d %d %d)\n", width, height, x, y, Math.min(boxWidth, Math.max(0, width - x)), Math.min(boxHeight, Math.max(0, height - y)));
-		if(Math.min(boxWidth, Math.max(0, width - x)) < 0)
-		{
-			System.out.printf("%d %d\n", boxWidth, width - x);
-		}
+//		System.out.printf("Image: (%d %d) \t Box: (%d %d %d %d)\n", width, height, x, y, Math.min(boxWidth, Math.max(0, width - x)), Math.min(boxHeight, Math.max(0, height - y)));
+//		if(Math.min(boxWidth, Math.max(0, width - x)) < 0)
+//		{
+//			System.out.printf("%d %d\n", boxWidth, width - x);
+//		}
 		Mat sub = new Mat();
 		Rect roi = new Rect(x, y, Math.min(boxWidth, Math.max(0, width - x)), Math.min(boxHeight, Math.max(0, height - y)));
 		
