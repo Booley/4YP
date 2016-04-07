@@ -36,7 +36,7 @@ layer {
 
 layer {
   name: "relu1"
-  type: "ReLU"
+  type: "Sigmoid"
   bottom: "conv1"
   top: "conv1"
 }
@@ -76,7 +76,7 @@ layer {
 
 layer {
   name: "relu2"
-  type: "ReLU"
+  type: "Sigmoid"
   bottom: "conv2"
   top: "conv2"
 }
@@ -111,7 +111,7 @@ layer {
 
 layer {
   name: "relu3"
-  type: "ReLU"
+  type: "Sigmoid"
   bottom: "ip1"
   top: "ip1"
 }
@@ -136,7 +136,7 @@ layer {
 
 layer {
   name: "relu4"
-  type: "ReLU"
+  type: "Sigmoid"
   bottom: "ip2"
   top: "ip2"
 }
