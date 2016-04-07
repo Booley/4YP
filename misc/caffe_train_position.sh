@@ -2,7 +2,7 @@
 #PBS -N caffe-train-position
 #PBS -M bo.moon@st-annes.ox.ac.uk
 #PBS -m abe
-#PBS -q parallel
+#PBS -q nice
 #PBS -V
 #PBS -o localhost:/scratch/bhmoon/Documents/Reports/caffe_train/results_${PBS_JOBID}.out
 #PBS -e localhost:/scratch/bhmoon/Documents/Reports/caffe_train/results_${PBS_JOBID}.err
