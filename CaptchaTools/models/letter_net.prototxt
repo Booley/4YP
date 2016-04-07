@@ -14,7 +14,7 @@ layer {
 }
 
 layer {
-  name: "conv1"
+  name: "conv1-bw"
   type: "Convolution"
   param { lr_mult: 1 }
   param { lr_mult: 2 }
