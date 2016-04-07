@@ -1,9 +1,10 @@
 
 import matplotlib.pyplot as plt
+import sys
 
-log_file = "results_76175.headnode.err"
+log_file = sys.argv[1]
 subsample = 10
-start = 100
+start = 10
 
 losses = []
 name = ""
@@ -14,7 +15,12 @@ for line in open(log_file):
 	elif tail[0] == "name:":
 		name = tail[1][1:-2]
 
+print "Initial loss:", losses[0]
+print "Final loss:", losses[-1]
+print "Lowest loss:", min(losses)
+
 plt.plot(losses[start:len(losses):subsample])
 plt.ylabel("Losses")
 plt.xlabel(name)
 plt.show()
+
