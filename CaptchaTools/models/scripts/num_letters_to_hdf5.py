@@ -28,7 +28,7 @@ for i in range(NUM_IMGS):
 	# img = img.transpose((2,0,1))
 
 	# you may apply other input transformations here...
-	X[i] = img[0,:,:]
+	X[i] = img[:,:,0]
 
 # X = np.multiply(X, 255) 
 
