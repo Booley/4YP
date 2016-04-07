@@ -3,7 +3,7 @@ import h5py
 import sys
 import caffe
 
-SIZE = 30 # fixed size to all images
+SIZE = 64 # fixed size to all images
 
 # be sure to change for every net
 img_path = '../../images/letters/'
@@ -16,7 +16,7 @@ outputH5_prefix = 'train_letters'
 
 y = np.loadtxt(file_labels)
 NUM_IMGS = y.shape[0]
-X = np.zeros( (NUM_IMGS, 3,SIZE, SIZE), dtype='f4' )
+X = np.zeros( (NUM_IMGS, 1,SIZE, SIZE), dtype='f4' )
 
 
 for i in range(NUM_IMGS):
@@ -25,10 +25,10 @@ for i in range(NUM_IMGS):
 
 	img = caffe.io.load_image(img_path + "image%06d.png" % (i+1))
 	img = caffe.io.resize_image( img, (SIZE, SIZE), interp_order=3 ) # resize to fixed size
-	img = img.transpose((2,0,1))
+	# img = img.transpose((2,0,1))
 
 	# you may apply other input transformations here...
-	X[i] = img
+	X[i] = img[0,:,:]
 
 # X = np.multiply(X, 255) 
 
