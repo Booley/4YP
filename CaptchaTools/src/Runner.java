@@ -5,6 +5,8 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Scanner;
 
+import javax.imageio.ImageIO;
+
 import org.bytedeco.javacpp.opencv_core.Mat;
 import org.bytedeco.javacpp.opencv_imgcodecs;
 import org.opencv.core.Core;
@@ -21,35 +23,21 @@ public class Runner
 	//don't forget to comment out
 	public static void main(String[] args) throws IOException
 	{
-//		Captcha c = new Captcha(100, 200);
-//		c.drawText("what what", 50, 50, 2, 2, 1, 1);
-////		c.showImg();
-//		String model = "/Users/bomoon/Documents/Eclipse Workspace/OpenCVTest/models/captchanet_deploy.prototxt"; 
-//		String weights = "/Users/bomoon/Documents/Eclipse Workspace/OpenCVTest/models/snapshots/captchanet_iter_100.caffemodel";
-//		CNN net = new CNN(model, weights);
-////		Mat img = opencv_imgcodecs.imread("/Users/bomoon/Documents/Eclipse Workspace/OpenCVTest/test_imgs/image0000.png");
-		
-//		System.out.println(Arrays.toString(net.forward(c)));
-		
-//		Utils.letterBatch("letter_labels.txt");
-		
-//		
 		String model = "models/wave_net_deploy.prototxt"; 
-		String weights = "models/snapshots/wave_net_weights.caffemodel";
+		String weights = "models/snapshots/wave_net_iter_7000.caffemodel";
 		
-		int imnum = 5;
-		Mat img = opencv_imgcodecs.imread(String.format("images/captchas/image%06d.png", imnum));
-//		System.out.println(img);
-//		CNN net = new CNN(model, weights);
+		int imnum = 1;
+		String file = String.format("images/captchas/image%06d.png", imnum);
+//		Mat img = opencv_imgcodecs.imread(file);
 		
-//		Utils.captchaBatch(30000);
-//		System.out.println(img);
-		Captcha c = Captcha.generateBaseline(7);
-//		c.showImg();
+//		Imshow im = new Imshow("");
+//		im.showImage(Utils.bufferedImageToMat(ImageIO.read(new File(file))));
 		
-		CNN waveNet = new CNN(model, weights);
+		Mat img = Utils.convertOpenCVToJavaCV(Utils.bufferedImageToMat(ImageIO.read(new File(file))));
 		
-		double[] output = waveNet.forward(img);
+		CNN net = new CNN(model, weights);
+		
+		double[] output = net.forward(img);
 		System.out.println(Arrays.toString(output));
 		
 ////		

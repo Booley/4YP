@@ -25,7 +25,7 @@ public class CNN
 {
 	//captcha: 120
 	//letter: 30
-	public static int SIZE = 30;
+	public static int SIZE = 64;
 	public Net net;
 	public int size;
 	public double[] scores;
