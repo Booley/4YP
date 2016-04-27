@@ -1,0 +1,38 @@
+name: "SIMPLE_XOR_NET"
+input: "data"
+input_dim: 10
+input_dim: 1
+input_dim: 1
+input_dim: 2
+
+
+layer {
+  name: "fc1"
+  type: "InnerProduct"
+  bottom: "data"
+  top: "fc1"
+  inner_product_param {
+    num_output: 40 # We need to have some positive and some negative initial weights with high probability
+    weight_filler {
+      type: "xavier"
+    }
+    bias_filler {
+      type: "xavier"
+    }
+  }
+}
+layer {
+  name: "relu1"
+  type: "ReLU"
+  bottom: "fc1"
+  top: "fc1"
+}
+layer {
+  name: "fc2"
+  type: "InnerProduct"
+  bottom: "fc1"
+  top: "fc2"
+  inner_product_param {
+    num_output: 2
+  }
+}

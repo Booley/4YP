@@ -3,8 +3,8 @@ import matplotlib.pyplot as plt
 import sys
 
 log_file = sys.argv[1]
-subsample = 10
-start = 10
+subsample = 1
+start = 1
 
 losses = []
 name = ""

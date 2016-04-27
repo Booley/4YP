@@ -126,7 +126,7 @@ public class CNN
 		}
 		Pair[] arr = list.toArray(new Pair[0]);
 		Arrays.sort(arr);
-		
+		System.out.println(arr.length);
 		Pair[] top = new Pair[n];
 		
 		for(int i = 0; i < n; i++)

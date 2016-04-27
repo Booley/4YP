@@ -14,7 +14,7 @@ import org.opencv.imgproc.Imgproc;
 
 public class Utils
 {
-	public static String alphabet = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890        ";
+	public static String alphabet = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890";
 	
 	private static int npmax(List<Integer> list, List<Pair> idx)
 	{
@@ -361,7 +361,7 @@ public class Utils
 			c.ripple(amplitude, period, shift);
 
 			// c.showImg();
-			c.saveImg("images/captchas/" + String.format("image%06d.png", counter));
+			c.saveImg("images/test_captchas/" + String.format("image%06d.png", counter));
 			outputWave.printf("%d %d %d\n", amplitude, period, shift);
 			outputNum.printf("%d\n", numLetters);
 			outputPositions.printf("%d %d\n", x, y);

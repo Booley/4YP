@@ -19,7 +19,7 @@ layer {
   param { lr_mult: 1 }
   param { lr_mult: 2 }
   convolution_param {
-    num_output: 500 
+    num_output: 50
     kernel_size: 5
     stride: 1
     weight_filler {
@@ -36,7 +36,7 @@ layer {
 
 layer {
   name: "relu1"
-  type: "Sigmoid"
+  type: "ReLU"
   bottom: "conv1"
   top: "conv1"
 }
@@ -76,7 +76,7 @@ layer {
 
 layer {
   name: "relu2"
-  type: "Sigmoid"
+  type: "ReLU"
   bottom: "conv2"
   top: "conv2"
 }
@@ -111,7 +111,7 @@ layer {
 
 layer {
   name: "relu3"
-  type: "Sigmoid"
+  type: "ReLU"
   bottom: "ip1"
   top: "ip1"
 }
@@ -136,7 +136,7 @@ layer {
 
 layer {
   name: "relu4"
-  type: "Sigmoid"
+  type: "ReLU"
   bottom: "ip2"
   top: "ip2"
 }

@@ -3,7 +3,7 @@ import h5py
 import sys
 import caffe
 
-SIZE = 64 # fixed size to all images
+SIZE = 100 # fixed size to all images
 
 # be sure to change for every net
 img_path = '../../images/captchas/'
@@ -15,6 +15,7 @@ outputH5_prefix = 'train_num_letters'
 # transformer.set_transpose('data', (2,0,1))
 
 y = np.loadtxt(file_labels)
+y = y - 3
 NUM_IMGS = y.shape[0]
 X = np.zeros( (NUM_IMGS, 1,SIZE, SIZE), dtype='f4' )
 

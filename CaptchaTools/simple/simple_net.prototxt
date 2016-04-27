@@ -1,0 +1,74 @@
+name: "simple_net"
+
+layer {
+  name: "input"
+  type: "HDF5Data"
+
+  hdf5_data_param {
+    source: "simple_h5_list.txt"
+    batch_size: 10
+    shuffle: true
+  }
+
+  top: "data"
+  top: "label"
+}
+
+layer {
+  name: "ip1"
+  type: "InnerProduct"
+  param { lr_mult: 1 }
+  param { lr_mult: 2 }
+  inner_product_param {
+    num_output: 10
+    weight_filler {
+      type: "xavier"
+    }
+    bias_filler {
+      type: "constant"
+    }
+  }
+  bottom: "data"
+  top: "ip1"
+}
+
+
+layer {
+  name: "relu3"
+  type: "ReLU"
+  bottom: "ip1"
+  top: "ip1"
+}
+
+layer {
+  name: "ip2"
+  type: "InnerProduct"
+  param { lr_mult: 1 }
+  param { lr_mult: 2 }
+  inner_product_param {
+    num_output: 1
+    weight_filler {
+      type: "xavier"
+    }
+    bias_filler {
+      type: "constant"
+    }
+  }
+  bottom: "ip1"
+  top: "ip2"
+}
+
+layer {
+  name: "relu4"
+  type: "ReLU"
+  bottom: "ip2"
+  top: "ip2"
+}
+
+layer {
+  name: "loss"
+  type: "EuclideanLoss"
+  bottom: "ip2" 
+  bottom: "label" 
+  top: "loss"
+}

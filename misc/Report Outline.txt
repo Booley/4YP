@@ -1,0 +1,39 @@
+Report Outline:
+-Cover/Title
+-Acknowledgements
+-Abstract
+-Contents
+
+-Intro 
+	-What project is about
+	-How report is organized
+-Literature Review
+...
+
+-Conclusions
+	-Summary of results
+	-Possible extensions for future work
+-Bibliography
+-Appendices?
+
+
+
+
+
+Things to talk about:
+-Background:
+	-probabilistic programming
+	-inverse graphics
+	-MCMC inference + RMH
+
+-how program works:
+	-define generative model + likelihood function
+	-create stochastic scene generator
+	-ABC style inference
+	-explain reasons for parameterizations
+		-boolean "present"
+
+
+
+
+

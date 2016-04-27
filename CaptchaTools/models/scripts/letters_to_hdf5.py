@@ -3,7 +3,7 @@ import h5py
 import sys
 import caffe
 
-SIZE = 64 # fixed size to all images
+SIZE = 28 # fixed size to all images
 
 # be sure to change for every net
 img_path = '../../images/letters/'
