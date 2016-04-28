@@ -17,18 +17,17 @@
 (import java.util.Random)
 
 
-(def net (CNN. "/Users/bomoon/Documents/Eclipse Workspace/OpenCVTest/models/captchanet_deploy.prototxt" "/Users/bomoon/Documents/Eclipse Workspace/OpenCVTest/models/snapshots/captchanet_iter_100.caffemodel"))
+;; (def net (CNN. "/Users/bomoon/Documents/Eclipse Workspace/OpenCVTest/models/captchanet_deploy.prototxt" "/Users/bomoon/Documents/Eclipse Workspace/OpenCVTest/models/snapshots/captchanet_iter_100.caffemodel"))
 
 
-(def deploy-path "/Users/bomoon/Documents/4YP/CaptchaTools/models/")
-(def wave-net (CNN. "/Users/bomoon/Documents/4YP/CaptchaTools/models/wave_net_deploy.prototxt"
-                    "/Users/bomoon/Documents/4YP/CaptchaTools/models/snapshots/wave_net_weights.caffemodel") )
-(def letter-net (CNN. "/Users/bomoon/Documents/4YP/CaptchaTools/models/letter_net_deploy.prototxt"
-                    "/Users/bomoon/Documents/4YP/CaptchaTools/models/snapshots/letter_net_weights.caffemodel") )
-(def position-net (CNN. "/Users/bomoon/Documents/4YP/CaptchaTools/models/position_net_deploy.prototxt"
-                    "/Users/bomoon/Documents/4YP/CaptchaTools/models/snapshots/position_net_weights.caffemodel") )
-(def num-net (CNN. "/Users/bomoon/Documents/4YP/CaptchaTools/models/num_net_deploy.prototxt"
-                    "/Users/bomoon/Documents/4YP/CaptchaTools/models/snapshots/num_net_weights.caffemodel") )
+(def wave-net (CNN. "/Users/bomoon/Documents/caffe-old/bo_models/wave_net/wave.prototxt"
+                    "/Users/bomoon/Documents/caffe-old/bo_models/wave_net/wave_weights.caffemodel") )
+(def letter-net (CNN. "/Users/bomoon/Documents/caffe-old/bo_models/letter_net/letter.prototxt"
+                    "/Users/bomoon/Documents/caffe-old/bo_models/letter_net/letter_weights.caffemodel") )
+(def position-net (CNN. "/Users/bomoon/Documents/caffe-old/bo_models/position_net/position.prototxt"
+                    "/Users/bomoon/Documents/caffe-old/bo_models/position_net/snapshots/position_iter_10000.caffemodel") )
+(def num-net (CNN. "/Users/bomoon/Documents/caffe-old/bo_models/num_net/num.prototxt"
+                    "/Users/bomoon/Documents/caffe-old/bo_models/num_net/snapshots/num_iter_10000.caffemodel") )
 (def forward #(.forward %1 %2))
 (def normalize #(.normalize %))
 
@@ -167,7 +166,7 @@
 (defm get-net-output [c]
   (let [num-letters (+ 3 (adaptive-sample (uniform-discrete 0 7)
                            discrete
-                           #(let [weights (do (.forward num-net %) (.normalize num-net))] [(vec weights)])
+                           #(let [weights (.forward num-net %)] [(vec weights)])
                            identity
                            c))
         wave-net-output (let [weights (vec (forward wave-net c))]
@@ -304,7 +303,9 @@
 (drawText baseline "wave" 10 40 3 2 0.8 0)
 (ripple baseline 10 200 10)
 
-(predict-num-letters baseline)
+
+
+;; (predict-num-letters baseline)
 
 
 ;; (sample (discrete #((let [] [0.5 0.5]))))
@@ -317,6 +318,8 @@
 (.storeBaseline baseline)
 ;; (.showImg baseline)
 
+(vec (.forward letter-net baseline 28))
+
 
 
 (def stime (System/currentTimeMillis))
@@ -324,7 +327,7 @@
 
 (def sampler (doquery :lmh guess-captcha [baseline]))
 
-(def num-particles 10)
+(def num-particles 1)
 ;; (def sampler (doquery :smc guess-captcha [baseline] :number-of-particles num-particles))
 (get-predicts (nth sampler 1))
 

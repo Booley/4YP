@@ -47,7 +47,18 @@ public class Runner
 		Captcha c = new Captcha(100, 250);
 		c.drawText("Fnlt1", 18, 85, 2, 2, 0.8, 0.2);
 		c.rippleCentered(9.48144341, 178.70716858, 131.40489197);
-		c.showImg();
+		c.addNoise(1000);
+//		c.saveImg();
+//		c.showImg();
+		
+//		CNN net = new CNN("/Users/bomoon/Documents/caffe-old/bo_models/wave_net/wave.prototxt", "/Users/bomoon/Documents/caffe-old/bo_models/wave_net/wave_weights.caffemodel");
+//		CNN net = new CNN("/Users/bomoon/Documents/caffe-old/bo_models/letter_net/letter.prototxt", "/Users/bomoon/Documents/caffe-old/bo_models/letter_net/letter_weights.caffemodel");
+//		CNN net = new CNN("/Users/bomoon/Documents/caffe-old/bo_models/num_net/num.prototxt", "/Users/bomoon/Documents/caffe-old/bo_models/num_net/snapshots/num_iter_2000.caffemodel");
+//		CNN net = new CNN("/Users/bomoon/Documents/caffe-old/bo_models/position_net/position.prototxt", "/Users/bomoon/Documents/caffe-old/bo_models/position_net/snapshots/position_iter_10000.caffemodel");
+//		Captcha img = new Captcha("/Users/bomoon/Documents/4YP/CaptchaTools/image0000.png");
+
+//		double[] output = net.forward(c);
+//		System.out.println(Arrays.toString(output));
 		
 	}
 	

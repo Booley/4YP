@@ -23,9 +23,14 @@ import org.bytedeco.javacpp.opencv_dnn.Net;
 
 public class CNN
 {
+	//position: 28
+	//wave: 64
+	//num letters: 100
+	//letter: 28, prob
+	
 	//captcha: 120
 	//letter: 30
-	public static int SIZE = 64;
+	public static int SIZE = 100;
 	public Net net;
 	public int size;
 	public double[] scores;
@@ -42,18 +47,18 @@ public class CNN
 	// NOTE: uses javacpp Mat type
 	// be careful about num channels
 	// forward pass and cache scores
-	public double[] forward(Mat img)
+	public double[] forward(Mat img, int size)
 	{	
 		// must allocate to new mat, or error
 		Mat resized = new Mat();
-		opencv_imgproc.resize(img, resized, new Size(SIZE, SIZE));
-
+		opencv_imgproc.resize(img, resized, new Size(size, size));
+		
 		Blob inputBlob = new Blob(resized);
-
+		System.out.println(resized);
 		net.setBlob(".data", inputBlob);
 		net.forward();
 		
-		Blob prob = net.getBlob("ip2");
+		Blob prob = net.getBlob("ip3");
 		Mat probMat = prob.matRefConst();
 		FloatBufferIndexer idx = probMat.createIndexer();
 		
@@ -102,18 +107,18 @@ public class CNN
 	
 	//must convert c.img() Mat type to javacpp.Mat type
 	//also check num channels?
-	public double[] forward(Captcha c) throws IOException
+	public double[] forward(Captcha c, int size) throws IOException
 	{
-		Mat tmp = new Mat(new BytePointer()) {{ address = c.toC3().getNativeObjAddr(); }};
+		Mat tmp = new Mat(new BytePointer()) {{ address = c.toC1().getNativeObjAddr(); }};
 		
-		return forward(tmp);
+		return forward(tmp, size);
 	}
 	
-	public double[] forward(org.opencv.core.Mat m)
+	public double[] forward(org.opencv.core.Mat m, int size)
 	{
 		Mat tmp = new Mat(new BytePointer()) {{ address = m.getNativeObjAddr(); }};
 		
-		return forward(tmp);
+		return forward(tmp, size);
 	}
 	
 	// must perform forward pass first!!!

@@ -425,6 +425,19 @@ public class Captcha
 		return m;
 	}
 	
+	public Mat toC1()
+	{
+		Mat m = new Mat();
+		img.convertTo(m, CvType.CV_32FC1, 1/255.0);
+	
+		ArrayList<Mat> list = new ArrayList<Mat>();
+		list.add(m);
+		
+		Core.merge(list, m);
+
+		return m;
+	}
+	
 	// (x, y) = upper left corner of roi
 	// if box exceeds image boundary, crops to just the border
 	public Mat subregion(int x, int y, int boxWidth, int boxHeight)
