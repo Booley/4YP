@@ -413,27 +413,29 @@ public class Captcha
 		Imgproc.resize(img, img, sz);
 	}
 
-	public Mat toC3()
+	public static Mat toC3(Mat img)
 	{
+		Mat m = new Mat();
 		ArrayList<Mat> list = new ArrayList<Mat>();
 		list.add(img);
 		list.add(img);
 		list.add(img);
-		Mat m = new Mat();
+//		
 		Core.merge(list, m);
-
+		img.convertTo(m,CvType.CV_8UC3, 255);
 		return m;
+	}
+	
+	public static void showMat(Mat m)
+	{
+		Imshow im = new Imshow("");
+		im.showImage(toC3(m));
 	}
 	
 	public Mat toC1()
 	{
 		Mat m = new Mat();
 		img.convertTo(m, CvType.CV_32FC1, 1/255.0);
-	
-		ArrayList<Mat> list = new ArrayList<Mat>();
-		list.add(m);
-		
-		Core.merge(list, m);
 
 		return m;
 	}
@@ -452,12 +454,8 @@ public class Captcha
 		
 		sub = img.submat(roi).clone();
 		
-		ArrayList<Mat> list = new ArrayList<Mat>();
-		list.add(sub);
-		list.add(sub);
-		list.add(sub);
 		Mat m = new Mat();
-		Core.merge(list, m);
+		sub.convertTo(m, CvType.CV_32FC1, 1/255.0);
 		
 		return m;
 	}

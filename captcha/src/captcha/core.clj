@@ -21,17 +21,19 @@
 
 
 (def wave-net (CNN. "/Users/bomoon/Documents/caffe-old/bo_models/wave_net/wave.prototxt"
-                    "/Users/bomoon/Documents/caffe-old/bo_models/wave_net/wave_weights.caffemodel") )
+                    "/Users/bomoon/Documents/caffe-old/bo_models/wave_net/wave_weights.caffemodel"
+                    64 "ip3") )
 (def letter-net (CNN. "/Users/bomoon/Documents/caffe-old/bo_models/letter_net/letter.prototxt"
-                    "/Users/bomoon/Documents/caffe-old/bo_models/letter_net/letter_weights.caffemodel") )
+                    "/Users/bomoon/Documents/caffe-old/bo_models/letter_net/letter_weights.caffemodel"
+                      28 "prob") )
 (def position-net (CNN. "/Users/bomoon/Documents/caffe-old/bo_models/position_net/position.prototxt"
-                    "/Users/bomoon/Documents/caffe-old/bo_models/position_net/snapshots/position_iter_10000.caffemodel") )
-(def num-net (CNN. "/Users/bomoon/Documents/caffe-old/bo_models/num_net/num.prototxt"
-                    "/Users/bomoon/Documents/caffe-old/bo_models/num_net/snapshots/num_iter_10000.caffemodel") )
+                    "/Users/bomoon/Documents/caffe-old/bo_models/position_net/snapshots/position_iter_10000.caffemodel"
+                        28 "ip3") )
+;; (def num-net (CNN. "/Users/bomoon/Documents/caffe-old/bo_models/num_net/num.prototxt"
+;;                     "/Users/bomoon/Documents/caffe-old/bo_models/num_net/snapshots/num_iter_10000.caffemodel") )
 (def forward #(.forward %1 %2))
 (def normalize #(.normalize %))
 
-;; (def alphabet "ABCDEFGH/IJKLMNOPQRSTUVWXXYZ                             ")
 (def alphabet "ABCDEFGHIJKLMNOPQRSTUVWXXYZabcdefghijklmnopqrstuvwxyz")
 (def new-dim-size 300) ; 700 300 LAST THING CHANGED
 (def SHRINK_LENGTH 35)
@@ -156,34 +158,36 @@
 ;; neural net wrappers
 
 ;; returns probabilities for classes 3-9
-(defn predict-num-letters [captcha]
-  (let [weights (do (.forward num-net captcha)
-                    (.normalize num-net))]
-    (vec weights)
-))
+;; (defn predict-num-letters [captcha]
+;;   (let [weights (do (.forward num-net captcha)
+;;                     (.normalize num-net))]
+;;     (vec weights)
+;; ))
 
 (with-primitive-procedures [forward]
 (defm get-net-output [c]
-  (let [num-letters (+ 3 (adaptive-sample (uniform-discrete 0 7)
-                           discrete
-                           #(let [weights (.forward num-net %)] [(vec weights)])
-                           identity
-                           c))
+  (let [
+         num-letters (sample (uniform-discrete 3 10))
+;;          num-letters (+ 3 (adaptive-sample (uniform-discrete 0 7)
+;;                            discrete
+;;                            #(let [weights (.forward num-net %)] [(vec weights)])
+;;                            identity
+;;                            c))
         wave-net-output (let [weights (vec (forward wave-net c))]
                           {:amplitude (max 0 (first weights)),
                            :period (max 0 (second weights)),
                            :shift (max 0 (nth weights 2))})
-        amplitude (adaptive-sample (uniform-discrete 0 12)
+        amplitude (adaptive-sample (uniform-continuous 0 12)
                      normal
                      #(let [mu (:amplitude wave-net-output) std 20 _ %] [mu std])
                      identity
                      nil)
-        period (adaptive-sample (uniform-discrete 190 500)
+        period (adaptive-sample (uniform-continuous 190 500)
                      normal
                      #(let [mu (:period wave-net-output) std 30 _ %] [mu std])
                      identity
                      nil)
-        shift (adaptive-sample (uniform-discrete 0 period)
+        shift (adaptive-sample (uniform-continuous 0 period)
                      normal
                      #(let [mu (:shift wave-net-output) std 100 _ %] [mu std])
                      identity
@@ -196,25 +200,28 @@
 (defn subregion [captcha a b c d] (.subregion captcha a b c d))
 
 (with-primitive-procedures [subregion forward]
-(defm sample-x-pos [baseline-captcha x-pos y-pos]
-  (let [box-dim 15
-        crop-x (+ box-dim (if (zero? (count x-pos)) -15 (last x-pos)))
+(defm sample-x-pos [baseline-captcha x-pos]
+  (let [box-dim 10
+        crop-x (min (dec WIDTH) (+ box-dim (if (zero? (count x-pos)) -10 (last x-pos))))
         weights (vec (forward position-net (subregion baseline-captcha crop-x 0 (- WIDTH crop-x) LENGTH)))]
-  (adaptive-sample (uniform-discrete 0 WIDTH)
+  (min (dec WIDTH) (+ crop-x (adaptive-sample (uniform-discrete 0 WIDTH)
                    normal
                    #(let [_ %
                           mu (first weights)
-                          std 2]
+                          std 5]
                       [mu std])
                    identity
-                   nil))))
+                   nil))))))
+
+
+
 
 (with-primitive-procedures [subregion forward normalize]
 (defm sample-index [baseline-captcha x-pos y-pos]
-  (let [box-dim 15
-        new-x (+ box-dim (if (zero? (count x-pos)) 0 (last x-pos)))
-        weights (do (forward letter-net (subregion baseline-captcha new-x y-pos box-dim box-dim))
-                    (normalize num-net))]
+  (let [box-dim 30
+        new-x (min (- WIDTH (/ box-dim 1.5)) (max (/ box-dim 2) x-pos))
+        new-y (max (/ box-dim 2) y-pos)
+        weights (do (forward letter-net (subregion baseline-captcha (- new-x (/ box-dim 2)) (- new-y (/ box-dim 2)) box-dim box-dim)))]
   (adaptive-sample (uniform-discrete 0 (count alphabet))
                    discrete
                    #(let [_ %]
@@ -224,7 +231,7 @@
 
 (with-primitive-procedures [eye join generateBaseline makeCaptcha split dot hypot get-coords equalizeHist ripple
                             drawLetter globalBlur getPixels reduce-dim scalar-multiply clear shrink blurBaseline
-                            nextInt drawLine drawText dilate predict-num-letters forward round-range resetBaseline]
+                            nextInt drawLine drawText dilate forward round-range resetBaseline]
 (defquery guess-captcha [baseline-captcha]
   (let [p (get-net-output baseline-captcha)
         num-letters (:n p)
@@ -233,7 +240,15 @@
         shift (:s p)
 
         ;; note x-pos is not sampled here!!!
-        y-pos (sample (uniform-discrete 0 LENGTH))
+        ;; all letters have the same y-pos!
+        y-pos (adaptive-sample (uniform-discrete 0 LENGTH)
+                   normal
+                   #(let [weights (vec (forward position-net %))
+                          mu (second weights)
+                          std 5]
+                      [mu std])
+                   identity
+                   baseline-captcha)
 
         ;; not latent variables, but include to change if necessary
         is-present true
@@ -251,8 +266,9 @@
                            letter-sigma []
                            scale []]
                       (if (= i num-letters) {:x-pos x-pos, :letters letters, :thickness thickness, :letter-sigma letter-sigma, :scale scale}
-                        (let [_x-pos (round-range WIDTH 0 (sample-x-pos baseline-captcha x-pos y-pos))
-                              _index (sample-index baseline-captcha x-pos y-pos)
+                        (let [_ (resetBaseline baseline-captcha)
+                              _x-pos (sample-x-pos baseline-captcha x-pos)
+                              _index (sample-index baseline-captcha _x-pos y-pos)
                               _letter (str (nth alphabet _index))
                               _thickness (sample (uniform-discrete 2 6))
                               _letter-sigma (sample (uniform-continuous 0 2))
@@ -311,14 +327,15 @@
 ;; (sample (discrete #((let [] [0.5 0.5]))))
 ;; (.saveImg baseline)
 
-(.denoise baseline)
+;; (.denoise baseline)
 
-(.dilate baseline)
-(globalBlur baseline 1)
+;; (.dilate baseline)
+;; (globalBlur baseline 1)
 (.storeBaseline baseline)
-;; (.showImg baseline)
+(.showImg baseline)
+;; (resetBaseline baseline)
 
-(vec (.forward letter-net baseline 28))
+;; (vec (.forward letter-net baseline 28))
 
 
 
@@ -329,7 +346,8 @@
 
 (def num-particles 1)
 ;; (def sampler (doquery :smc guess-captcha [baseline] :number-of-particles num-particles))
-(get-predicts (nth sampler 1))
+(nth sampler 3)
+(get-predicts (nth sampler 200))
 
 (render-predicts (get-predicts (nth sampler (dec num-particles))))
 
@@ -362,3 +380,34 @@
 ;; (def predicts (map get-predicts (take max-runs sampler)))
 ;; (apply min-key :error predicts)
 
+
+
+
+(defquery basic-query [c]
+  (let [p (get-net-output c)
+        y-pos (adaptive-sample (uniform-discrete 0 100)
+                   normal
+                   #(let [weights (vec (forward position-net %))
+                          mu (second weights)
+                          std 5]
+                      [mu std])
+                   identity
+                   c)
+        x-pos (sample-x-pos c [10])
+;;         index (sample-index c x-pos y-pos)
+]
+    (predict :p p)
+    (predict :y y-pos)
+    (predict :x x-pos)))
+
+(def sampler (doquery :smc basic-query [baseline]))
+(map #(% :x) (map get-predicts (take 200 sampler)))
+
+;; (def baseline (Captcha. 100 200))
+;; (drawLetter baseline "A" 30 30 2 0 2 1 true 255)
+;; (drawLetter baseline "B" 50 30 2 0 2 1 true 255)
+;; (drawLetter baseline "B" 70 30 2 0 2 1 true 255)
+;; (.showImg baseline)
+
+;; (vec (forward position-net (subregion baseline 0 0 (- WIDTH 0) LENGTH)))
+;; (Captcha/showMat (subregion baseline 15.1 15 30 30))
