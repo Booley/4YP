@@ -45,33 +45,35 @@ public class Runner
 //			System.out.println(p);
 		
 //		Utils.captchaBatch(10);
-		Captcha c = new Captcha(100, 250);
+		Captcha c = new Captcha(250, 100);
 		c.drawText("Fnlt1", 18, 85, 2, 2, 0.8, 0.2);
 		c.rippleCentered(9.48144341, 178.70716858, 131.40489197);
 		c.addNoise(1000);
 //		c.saveImg();
 		c.showImg();
 		
-		org.opencv.core.Mat sub = c.subregion(28, 60, 30, 30);
-		Captcha.showMat(sub);
+		org.opencv.core.Mat sub = c.subregion(28, 80, 30, 30);
+//		Captcha.showMat(sub);
+		
+		
 		
 //		CNN net = new CNN("/Users/bomoon/Documents/caffe-old/bo_models/wave_net/wave.prototxt", "/Users/bomoon/Documents/caffe-old/bo_models/wave_net/wave_weights.caffemodel", 64, "ip3");
-		CNN net = new CNN("/Users/bomoon/Documents/caffe-old/bo_models/letter_net/letter.prototxt", "/Users/bomoon/Documents/caffe-old/bo_models/letter_net/letter_weights.caffemodel", 28, "prob");
+//		CNN net = new CNN("/Users/bomoon/Documents/caffe-old/bo_models/letter_net/letter.prototxt", "/Users/bomoon/Documents/caffe-old/bo_models/letter_net/letter_weights.caffemodel", 28, "prob");
 //		CNN net = new CNN("/Users/bomoon/Documents/caffe-old/bo_models/num_net/num.prototxt", "/Users/bomoon/Documents/caffe-old/bo_models/num_net/snapshots/num_iter_2000.caffemodel", 100, "prob");
 //		CNN net = new CNN("/Users/bomoon/Documents/caffe-old/bo_models/position_net/position.prototxt", "/Users/bomoon/Documents/caffe-old/bo_models/position_net/snapshots/position_iter_10000.caffemodel", 28, "ip3");
 //		Captcha img = new Captcha("/Users/bomoon/Documents/4YP/CaptchaTools/image0000.png");
-
-		double[] output = net.forward(sub);
-		System.out.println(Arrays.toString(output));
-		
-		ArrayList<Pair> pairs = new ArrayList<Pair>();
-		for(int i = 0; i < Utils.alphabet.length(); i++)
-		{
-			pairs.add(new Pair(output[i], i));
-		}
-		Collections.sort(pairs);
-		for(Pair p: pairs)
-			System.out.println(p);
+//
+//		double[] output = net.forward(sub);
+//		System.out.println(Arrays.toString(output));
+//		
+//		ArrayList<Pair> pairs = new ArrayList<Pair>();
+//		for(int i = 0; i < Utils.alphabet.length(); i++)
+//		{
+//			pairs.add(new Pair(output[i], i));
+//		}
+//		Collections.sort(pairs);
+//		for(Pair p: pairs)
+//			System.out.println(p);
 	}
 	
 }

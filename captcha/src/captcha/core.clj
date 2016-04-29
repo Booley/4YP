@@ -38,9 +38,6 @@
 (def new-dim-size 300) ; 700 300 LAST THING CHANGED
 (def SHRINK_LENGTH 35)
 (def SHRINK_WIDTH 75)
-(def LENGTH 70)
-(def WIDTH 150)
-(def total-pixels (* LENGTH WIDTH))
 
 ;; define some constants and functions
 (def join clojure.string/join)
@@ -62,7 +59,7 @@
 (defn blurBaseline [c r] (.blurBaseline c r))
 (defn equalizeHist [c] (.equalizeHist c))
 (def drawText #(.drawText %1 %2 %3 %4 %5 %6 %7 %8))
-(def ripple #(.ripple %1 %2 %3 %4))
+(def ripple #(.rippleCentered %1 %2 %3 %4))
 (def dilate #(.dilate %))
 (def resetBaseline #(.resetBaseline %))
 
@@ -92,26 +89,12 @@
 (create-sparse-mat)
 (defn reduce-dim [v] (m/mmul mat (m/array v)))
 
-(defn sample-char []
-  {:is-present (sample (flip 0.5))
-   :letter (str (nth alphabet (sample (uniform-discrete 0 (count alphabet)))))
-   :x (sample (uniform-discrete 0 WIDTH))
-   :y (sample (uniform-discrete 0 LENGTH))
-   :theta 0
-   :scale (sample (uniform-discrete 2 4))
-   :thickness (sample (uniform-discrete 2 4))
-   :sigma (* 6 (sample (beta 1 2)))})
 
 (defn save-weights [filename w]
   (do
     (spit filename "")
     (spit filename (join "\n" w) :append true) w))
 
-
-
-(defm sample-point [lower-x upper-x lower-y upper-y]
-  {:x (sample (uniform-discrete lower-x upper-x))
-   :y (sample (uniform-discrete lower-y upper-y))})
 
 
 (defn outside-neighborhood [point nums r]
@@ -347,7 +330,7 @@
 (def num-particles 1)
 ;; (def sampler (doquery :smc guess-captcha [baseline] :number-of-particles num-particles))
 (nth sampler 3)
-(get-predicts (nth sampler 200))
+(get-predicts (nth sampler 1))
 
 (render-predicts (get-predicts (nth sampler (dec num-particles))))
 
@@ -381,33 +364,145 @@
 ;; (apply min-key :error predicts)
 
 
-
-
-(defquery basic-query [c]
-  (let [p (get-net-output c)
-        y-pos (adaptive-sample (uniform-discrete 0 100)
-                   normal
-                   #(let [weights (vec (forward position-net %))
-                          mu (second weights)
-                          std 5]
-                      [mu std])
-                   identity
-                   c)
-        x-pos (sample-x-pos c [10])
-;;         index (sample-index c x-pos y-pos)
-]
-    (predict :p p)
-    (predict :y y-pos)
-    (predict :x x-pos)))
-
-(def sampler (doquery :smc basic-query [baseline]))
-(map #(% :x) (map get-predicts (take 200 sampler)))
-
-;; (def baseline (Captcha. 100 200))
-;; (drawLetter baseline "A" 30 30 2 0 2 1 true 255)
-;; (drawLetter baseline "B" 50 30 2 0 2 1 true 255)
-;; (drawLetter baseline "B" 70 30 2 0 2 1 true 255)
+(def baseline (Captcha. 150 70))
+;; (drawText baseline "wave" 10 40 3 2 0.8 0)
+;; (ripple baseline 10 200 10)
 ;; (.showImg baseline)
+(drawLetter baseline "A" 20 20 2 0 2 1 true 255)
+(drawLetter baseline "B" 50 30 2 0 2 1 true 255)
 
-;; (vec (forward position-net (subregion baseline 0 0 (- WIDTH 0) LENGTH)))
-;; (Captcha/showMat (subregion baseline 15.1 15 30 30))
+
+;; Captcha method wrappers
+(def getWidth #(.width %))
+(def getHeight #(.height %))
+(def clone #(.clone %))
+(def crop #(.crop %1 %2))
+(def add-vecs #(op/+ %1 (if (nil? %2) 0 %2)))
+
+(defn makeRandom [] (Random.))
+(def rdm (makeRandom))
+(defn nextInt [rdm bound] (.nextInt rdm bound))
+
+(with-primitive-procedures [getWidth getHeight clone globalBlur forward crop add-vecs makeCaptcha
+                            drawLetter getPixels nextInt]
+(defm run-wave-nn [c]
+  (let [wave-net-output (let [weights (vec (forward wave-net c))]
+                          {:amplitude (max 0 (first weights)),
+                           :period (max 0 (second weights)),
+                           :shift (max 0 (nth weights 2))})
+        amplitude (adaptive-sample (uniform-continuous 0 12)
+                     normal
+                     #(let [mu (:amplitude %) std 5] [mu std])
+                     identity wave-net-output)
+        period (adaptive-sample (uniform-continuous 190 500)
+                     normal
+                     #(let [mu (:period %) std 30 _ %] [mu std])
+                     identity wave-net-output)
+        shift (adaptive-sample (uniform-continuous 0 period)
+                     normal
+                     #(let [mu (:shift %) std 100 _ %] [mu std])
+                     identity wave-net-output)]
+    {:a amplitude, :p period, :s shift}
+))
+
+  ;; TODO use adapative sample
+(defm get-init-pos [c]
+  (let [position-net-output (vec (forward position-net c))]
+    {:x (first position-net-output), :y (second position-net-output)}
+))
+
+;; TODO: use adaptive sample
+(defm find-letter-pos [c positions]
+  (let [letter-width 20
+        crop-x (if (zero? (count positions)) 0 (+ letter-width (second (last positions))))
+        submat (crop c crop-x)
+        pos-net-output (vec (forward position-net submat))
+       ]
+    pos-net-output
+))
+
+(defquery read-captcha [original-baseline-captcha]
+  (let [;; define reference vars
+        baseline (clone original-baseline-captcha)
+        WIDTH (getWidth original-baseline-captcha)
+        HEIGHT (getHeight original-baseline-captcha)
+        rendered (makeCaptcha WIDTH HEIGHT)
+
+        ;; begin sampling vars
+        num-letters (sample (uniform-discrete 3 9))
+
+        ;; run wave net
+        wave-output (run-wave-nn baseline)
+        amplitude (:a wave-output)
+        period (:p wave-output)
+        shift (:s wave-output)
+
+        ;; run position net
+        init-position (get-init-pos baseline)
+        init-x (:x init-position)
+        init-y (:y init-position)
+
+        ;; sample other vars, either not latent (yet) or don't have nets
+        rendered-sigma (sample (uniform-continuous 0.4 2))
+        baseline-sigma (sample (uniform-continuous 1 2))
+        thickness (repeatedly num-letters #(sample (uniform-discrete 2 6)))
+        letter-sigma (repeatedly num-letters #(sample (uniform-continuous 0 2)))
+        scale (repeatedly num-letters #(sample (uniform-discrete 2 4)))
+
+        is-present true
+        color 255
+        theta 0
+
+        ;; use nets to predict letter position and identity, iteratively
+        letter-vars
+         (loop [i 0
+                positions []
+                letters []]
+           (if (= i num-letters) {:positions positions, :letters letters}
+             (let [pos-net-output (find-letter-pos baseline positions)
+                   x-pos (adaptive-sample (uniform-continuous 0 WIDTH)
+                               normal
+                               #(let [mu (first %) std 10] [mu std])
+                               identity pos-net-output)
+                   y-pos (adaptive-sample (uniform-continuous 0 HEIGHT)
+                               normal
+                               #(let [mu (second %) std 10] [mu std])
+                               identity pos-net-output)
+
+                   letter-index (sample (uniform-discrete 0 (count alphabet)))
+                   letter (str (nth alphabet letter-index))]
+               (recur (inc i) (conj positions (add-vecs [x-pos y-pos]
+                                                        [(if (zero? (count positions)) 0 (first (last positions))) 0]))
+                      (conj letters letter)))))
+         ]
+    ;; render image
+    (map #(drawLetter rendered %1 %2 init-y %3 theta %4 %5 is-present color)
+         (:letters letter-vars) (map first (:positions letter-vars))
+         scale thickness letter-sigma)
+    (globalBlur rendered rendered-sigma)
+
+    (let [rendered-pixels (vec (getPixels rendered))
+          baseline-pixels (vec (getPixels baseline))
+          num-random-pixels (/ (* WIDTH HEIGHT) 25)
+          indices (repeatedly num-random-pixels #(nextInt rdm (count rendered-pixels)))
+          _ (println :shitttt indices)]
+;;       (doall (map #(observe (normal (nth rendered-pixels %) 255) (nth baseline-pixels %)) indices)))
+      (observe (normal 0 1) 0))
+
+    (predict :num-letters num-letters)
+    (predict :amplitude amplitude)
+    (predict :period period)
+    (predict :shift shift)
+    (predict :letter-vars letter-vars)
+)))
+
+(def num-particles 1)
+(def sampler (doquery :lmh read-captcha [baseline] :number-of-particles num-particles))
+(nth sampler (dec num-particles))
+
+
+(defquery gauss []
+  (let [mu (sample (uniform-continuous 0 10))]
+    (observe (normal mu 1) 3)))
+(def simple-sampler (doquery :lmh gauss []))
+(nth simple-sampler 100)

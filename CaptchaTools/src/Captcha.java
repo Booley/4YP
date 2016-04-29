@@ -17,87 +17,74 @@ import org.opencv.imgproc.Imgproc;
 
 public class Captcha
 {
+	private static final int FONT = Core.FONT_HERSHEY_PLAIN;
+	private static final Scalar COLOR = new Scalar(255);
+	private static final Size KSIZE = new Size(5, 5);
 	static
 	{
 		System.loadLibrary(Core.NATIVE_LIBRARY_NAME);
 	}
 	public int height; //70
 	public int width; //150
-	public int originalHeight, originalWidth;
-	private static final int FONT = Core.FONT_HERSHEY_PLAIN;
-	private static final Scalar COLOR = new Scalar(255);
-	private static final Size KSIZE = new Size(5, 5);
-//	private static final int THICKNESS = 1;
-//	private static final double SCALE = 1.4;
-	
 	private Mat img;
 	
-	public Mat baselineCopy; //why static?
-//	public static boolean madeBaseline = false;
-	
 	// create a blank captcha
-	public Captcha(int height, int width)
+	// reminder: (x, y) = (width, height)
+	public Captcha(int width, int height)
 	{
 		this.height = height;
 		this.width = width;
-		originalHeight = height;
-		originalWidth = width;
 		
 		img = Mat.zeros(height, width, CvType.CV_8UC1);
 	}
-
+	
+	public Captcha clone()
+	{
+		Captcha copy = new Captcha(width, height);
+		copy.setImg(img);
+		return copy;
+	}
+	
+	private void setImg(Mat m)
+	{
+		img = m.clone();
+	}
 	// intialize a captcha with an image, make b&w, and resize
-	public Captcha(int height, int width, String file) throws IOException
-	{
-		this.height = height;
-		this.width = width;
-		originalHeight = height;
-		originalWidth = width;
-		
-		BufferedImage bi = ImageIO.read(new File(file));
-		img = Utils.bufferedImageToMat(bi);
-		
-		//convert to black/white
-		Imgproc.cvtColor(img, img, Imgproc.COLOR_RGB2GRAY);
-		Core.subtract(Mat.ones(img.size(), img.type()).mul(Mat.ones(img.size(), img.type()), 255), img, img);
-		
-		resize(height, width);
-		baselineCopy = img.clone();
-	}
-	
-	public Captcha(String file) throws IOException
-	{	
-		BufferedImage bi = ImageIO.read(new File(file));
-		height = bi.getHeight();
-		width = bi.getWidth();
-		originalHeight = height;
-		originalWidth = width;
-		
-		img = Utils.bufferedImageToMat(bi);
-		
-		//convert to black/white
-		Imgproc.cvtColor(img, img, Imgproc.COLOR_RGB2GRAY);
-		Core.subtract(Mat.ones(img.size(), img.type()).mul(Mat.ones(img.size(), img.type()), 255), img, img);
-		
-		resize(height, width);
-		baselineCopy = img.clone();
-	}
-	
-	public void storeBaseline()
-	{
-		baselineCopy = img.clone();
-	}
-	
-	public void resetBaseline()
-	{
-		img = baselineCopy.clone();
-		height = originalHeight;
-		width = originalWidth;
-	}
+//	public Captcha(int height, int width, String file) throws IOException
+//	{
+//		this.height = height;
+//		this.width = width;
+//		
+//		BufferedImage bi = ImageIO.read(new File(file));
+//		img = Utils.bufferedImageToMat(bi);
+//		
+//		//convert to black/white
+//		Imgproc.cvtColor(img, img, Imgproc.COLOR_RGB2GRAY);
+//		Core.subtract(Mat.ones(img.size(), img.type()).mul(Mat.ones(img.size(), img.type()), 255), img, img);
+//		
+//		resize(height, width);
+//	}
+//	
+//	public Captcha(String file) throws IOException
+//	{	
+//		BufferedImage bi = ImageIO.read(new File(file));
+//		height = bi.getHeight();
+//		width = bi.getWidth();
+//		originalHeight = height;
+//		originalWidth = width;
+//		
+//		img = Utils.bufferedImageToMat(bi);
+//		
+//		//convert to black/white
+//		Imgproc.cvtColor(img, img, Imgproc.COLOR_RGB2GRAY);
+//		Core.subtract(Mat.ones(img.size(), img.type()).mul(Mat.ones(img.size(), img.type()), 255), img, img);
+//		
+//		resize(height, width);
+//		baselineCopy = img.clone();
+//	}
 	
 	public static void invert(Mat m)
 	{
-//		Imgproc.cvtColor(m, m, Imgproc.COLOR_RGB2GRAY);
 		Core.subtract(Mat.ones(m.size(), m.type()).mul(Mat.ones(m.size(), m.type()), 255), m, m);
 	}
 	
@@ -148,11 +135,6 @@ public class Captcha
 		}
 		
 		img = tmp;
-	}
-	
-	public void clear()
-	{
-		img = Mat.zeros(originalHeight, originalWidth, CvType.CV_8UC1);
 	}
 	
 	public void drawLetter(String letter, double x, double y, double scale, double angle, int thickness, double sigma)
@@ -239,8 +221,6 @@ public class Captcha
 				img.put(i, j, img.get(i, j)[0] < 110 ? 0 : 255);
 			}
 		}
-		
-		baselineCopy = img.clone();
 	}
 	
 	// i.e. increase contrast
@@ -248,7 +228,6 @@ public class Captcha
 	{
 		Imgproc.equalizeHist(img, img);
 		Imgproc.dilate(img, img, Imgproc.getStructuringElement(Imgproc.MORPH_ELLIPSE, new Size(3,3)));
-		baselineCopy = img.clone();
 	}
 	
 	public void showImg()
@@ -280,22 +259,12 @@ public class Captcha
 			Imgproc.GaussianBlur(img, img, KSIZE, sigma);
 		}
 	}
-
-	//blur the baseline image, store as current image 
-	public void blurBaseline(double sigma)
-	{
-		if(sigma > 0)
-		{
-			img = new Mat(baselineCopy.size(), baselineCopy.type());
-			Imgproc.GaussianBlur(baselineCopy, img, KSIZE, sigma);
-		}
-	}
 	
 	// generate a baseline Captcha object
 	public static Captcha generateBaseline(int id) throws IOException
 	{
-		int HEIGHT = 70;
-		int WIDTH = 150;
+		int HEIGHT = 150;
+		int WIDTH = 70;
 		Captcha c = new Captcha(HEIGHT, WIDTH);
 		if(id == 1)
 		{
@@ -372,9 +341,6 @@ public class Captcha
 //		}
 		
 		c.addNoise(400);
-		
-		c.baselineCopy = c.img.clone();
-		
 		return c;
 	}
 	
@@ -405,7 +371,7 @@ public class Captcha
 		Core.circle(img, new Point(x, y), radius, new Scalar(brightness), thickness);
 	}
 	
-	public void resize(int newHeight, int newWidth)
+	public void resize(int newWidth, int newHeight)
 	{
 		height = newHeight;
 		width = newWidth;
@@ -420,7 +386,7 @@ public class Captcha
 		list.add(img);
 		list.add(img);
 		list.add(img);
-//		
+
 		Core.merge(list, m);
 		img.convertTo(m,CvType.CV_8UC3, 255);
 		return m;
@@ -440,17 +406,31 @@ public class Captcha
 		return m;
 	}
 	
-	// (x, y) = upper left corner of roi
-	// if box exceeds image boundary, crops to just the border
-	public Mat subregion(int x, int y, int boxWidth, int boxHeight)
+	// returns image between column x and the width (cuts out first x columns)
+	public Mat crop(int x)
 	{
-//		System.out.printf("Image: (%d %d) \t Box: (%d %d %d %d)\n", width, height, x, y, Math.min(boxWidth, Math.max(0, width - x)), Math.min(boxHeight, Math.max(0, height - y)));
-//		if(Math.min(boxWidth, Math.max(0, width - x)) < 0)
-//		{
-//			System.out.printf("%d %d\n", boxWidth, width - x);
-//		}
+		Rect roi = new Rect(Math.min(x, width - 1), 0, Math.max(0, width - 1 - x), height);
+		
+		Mat m = img.submat(roi).clone();
+		m.convertTo(m, CvType.CV_32FC1, 1/255.0);
+		return m;
+	}
+	
+	// (x, y) = center of region
+	// if box exceeds image boundary, crops to just the border
+	// returns float matrix scaled between [0,1]
+	public Mat subregion(int cx, int cy, double boxWidth, double boxHeight)
+	{
+		double x = Math.max(0, cx - boxWidth / 2.0);
+		double y = Math.max(0, cy - boxHeight / 2.0);
+		
+		if(x + boxWidth > width)
+			boxWidth = width - x - 1;
+		if(y + boxHeight > height)
+			boxHeight = height - y - 1;
+		
 		Mat sub = new Mat();
-		Rect roi = new Rect(x, y, Math.min(boxWidth, Math.max(0, width - x)), Math.min(boxHeight, Math.max(0, height - y)));
+		Rect roi = new Rect((int)x, (int)y, (int)boxWidth, (int)boxHeight);
 		
 		sub = img.submat(roi).clone();
 		
