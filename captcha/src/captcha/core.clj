@@ -64,7 +64,7 @@
 (def resetBaseline #(.resetBaseline %))
 
 (defn render-predicts [c]
-  (let [captcha (Captcha. LENGTH WIDTH)]
+  (let [captcha (Captcha. (getWidth baseline) (getHeight baseline))]
     (doall (map #(drawLetter captcha %1 %2 (:y c) %3 0 %4 %5 true 255)
                   (:text c) (:x c) (:scale c) (:thickness c) (:sigma c)))
     (ripple captcha (:amplitude c) (:period c) (:shift c))
@@ -365,8 +365,8 @@
 
 
 (def baseline (Captcha. 150 70))
-;; (drawText baseline "wave" 10 40 3 2 0.8 0)
-;; (ripple baseline 10 200 10)
+(drawText baseline "wave" 10 40 3 2 0.8 0)
+(ripple baseline 10 200 10)
 ;; (.showImg baseline)
 (drawLetter baseline "A" 20 20 2 0 2 1 true 255)
 (drawLetter baseline "B" 50 30 2 0 2 1 true 255)
@@ -421,6 +421,27 @@
     pos-net-output
 ))
 
+(defm get-letter-vars [num-letters WIDTH HEIGHT ]
+  (loop [i 0
+        positions []
+        letters []]
+   (if (= i num-letters) {:positions positions, :letters letters}
+     (let [pos-net-output (find-letter-pos baseline positions)
+           x-pos (adaptive-sample (uniform-continuous 0 WIDTH)
+                       normal
+                       #(let [mu (first %) std 10] [mu std])
+                       identity pos-net-output)
+           y-pos (adaptive-sample (uniform-continuous 0 HEIGHT)
+                       normal
+                       #(let [mu (second %) std 10] [mu std])
+                       identity pos-net-output)
+
+           letter-index (sample (uniform-discrete 0 (count alphabet)))
+           letter (str (nth alphabet letter-index))]
+       (recur (inc i) (conj positions (add-vecs [x-pos y-pos]
+                                                [(if (zero? (count positions)) 0 (first (last positions))) 0]))
+              (conj letters letter))))))
+
 (defquery read-captcha [original-baseline-captcha]
   (let [;; define reference vars
         baseline (clone original-baseline-captcha)
@@ -454,26 +475,7 @@
         theta 0
 
         ;; use nets to predict letter position and identity, iteratively
-        letter-vars
-         (loop [i 0
-                positions []
-                letters []]
-           (if (= i num-letters) {:positions positions, :letters letters}
-             (let [pos-net-output (find-letter-pos baseline positions)
-                   x-pos (adaptive-sample (uniform-continuous 0 WIDTH)
-                               normal
-                               #(let [mu (first %) std 10] [mu std])
-                               identity pos-net-output)
-                   y-pos (adaptive-sample (uniform-continuous 0 HEIGHT)
-                               normal
-                               #(let [mu (second %) std 10] [mu std])
-                               identity pos-net-output)
-
-                   letter-index (sample (uniform-discrete 0 (count alphabet)))
-                   letter (str (nth alphabet letter-index))]
-               (recur (inc i) (conj positions (add-vecs [x-pos y-pos]
-                                                        [(if (zero? (count positions)) 0 (first (last positions))) 0]))
-                      (conj letters letter)))))
+        letter-vars (get-letter-vars num-letters WIDTH HEIGHT )
          ]
     ;; render image
     (map #(drawLetter rendered %1 %2 init-y %3 theta %4 %5 is-present color)
@@ -484,25 +486,51 @@
     (let [rendered-pixels (vec (getPixels rendered))
           baseline-pixels (vec (getPixels baseline))
           num-random-pixels (/ (* WIDTH HEIGHT) 25)
-          indices (repeatedly num-random-pixels #(nextInt rdm (count rendered-pixels)))
-          _ (println :shitttt indices)]
-;;       (doall (map #(observe (normal (nth rendered-pixels %) 255) (nth baseline-pixels %)) indices)))
-      (observe (normal 0 1) 0))
+          indices (repeatedly num-random-pixels #(nextInt rdm (count rendered-pixels)))]
+      (doall (map #(observe (flip 1) (<= (second %) HEIGHT)) (:positions letter-vars)))
+      (doall (map #(observe (flip 1) (<= (first %) WIDTH)) (:positions letter-vars)))
+      (doall (map #(observe (normal (nth rendered-pixels %) 80) (nth baseline-pixels %)) indices))
+      )
+
+
+
 
     (predict :num-letters num-letters)
     (predict :amplitude amplitude)
     (predict :period period)
     (predict :shift shift)
-    (predict :letter-vars letter-vars)
+    (predict :x (map first (:positions letter-vars)))
+    (predict :y (map second (:positions letter-vars)))
+    (predict :sigma letter-sigma)
+    (predict :thickness thickness)
+    (predict :letters (:letters letter-vars))
 )))
 
-(def num-particles 1)
+(def num-particles 100)
 (def sampler (doquery :lmh read-captcha [baseline] :number-of-particles num-particles))
-(nth sampler (dec num-particles))
+(:letters (get-predicts (nth sampler (dec num-particles))))
 
+(render-predicts (get-predicts (nth sampler (dec num-particles))))
+
+(.showImg baseline)
+(let [c (get-predicts (nth sampler (dec num-particles)))
+       captcha (Captcha. (getWidth baseline) (getHeight baseline))]
+;;     (doall (map #(drawLetter captcha %1 %2 (:y c) %3 0 %4 %5 true 255)
+;;                   (:text c) (:x c) (:scale c) (:thickness c) (:sigma c)))
+  (map #(drawLetter captcha (nth (:letters c) %) 50 50 2 0 2 3 true 255) (range (:num-letters c)))
+;;     (ripple captcha (:amplitude c) (:period c) (:shift c))
+  (.showImg captcha))
+
+
+(defn markPoints [c pos]
+  (map #(.drawCircle c (first %) (second %) 5 255 3) pos))
+(markPoints baseline [[32.63314874220046 68.22892198271965] [76.71837154154466 87.12912146403134] [101.56839051170493 95.06499449847719] [124.31746088037221 80.53787318423007] [182.72423711742124 83.34101120544398] [224.03264394033403 77.16722766547159]])
+(.showImg baseline)
 
 (defquery gauss []
-  (let [mu (sample (uniform-continuous 0 10))]
-    (observe (normal mu 1) 3)))
+  (let [mu (sample (uniform-continuous 0 100))]
+    (observe (normal mu 1) 3)
+    (predict :mu mu)))
+
 (def simple-sampler (doquery :lmh gauss []))
-(nth simple-sampler 100)
+(nth simple-sampler 1000)
