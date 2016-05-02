@@ -339,11 +339,25 @@
 ;; (drawText baseline "wave" 10 40 3 2 0.8 0)
 ;; (ripple baseline 10 200 10)
 ;; (.showImg baseline)
-(drawLetter baseline "A" 20 30 2 0 3 1 true 255)
-(drawLetter baseline "B" 40 30 2 0 3 1 true 255)
-(drawLetter baseline "C" 60 30 2 0 3 1 true 255)
-(.addNoise baseline 1000)
+(drawLetter baseline "A" 30 40 2 0 3 1 true 255)
+(drawLetter baseline "B" 60 40 2 0 3 1 true 255)
+(drawLetter baseline "C" 90 40 2 0 3 1 true 255)
+(drawLetter baseline "D" 120 40 2 0 3 1 true 255)
+;; (drawLetter baseline "E" 110 40 2 0 3 1 true 255)
+(.addNoise baseline 800)
+(ripple baseline 12 178 112)
 (.showImg baseline)
+
+(vec (forward wave-net baseline))
+(rescale (forward position-net baseline))
+(defn rescale [p]
+  (let [x (first (vec p))
+        y (second (vec p))]
+    (vector (* x (/ 150 240)) (* y (/ 70 110)))))
+
+(ripple baseline 8.43 174.69 66)
+
+
 
 ;; Captcha method wrappers
 (def getWidth #(.width %))
@@ -364,16 +378,16 @@
                            :period (max 0 (second weights)),
                            :shift (max 0 (nth weights 2))})
         amplitude (adaptive-sample (uniform-continuous 0 12)
-                     normal
-                     #(let [mu (:amplitude %) std 8] [mu std])
+                     bounded-normal
+                     #(let [mu (:amplitude %) std 4] [mu std 1 11])
                      identity wave-net-output)
         period (adaptive-sample (uniform-continuous 190 500)
-                     normal
-                     #(let [mu (:period %) std 200 _ %] [mu std])
+                     bounded-normal
+                     #(let [mu (:period %) std 100 _ %] [mu std 191 499])
                      identity wave-net-output)
         shift (adaptive-sample (uniform-continuous 0 period)
-                     normal
-                     #(let [mu (:shift %) std period _ %] [mu std])
+                     bounded-normal
+                     #(let [mu (:shift %) std 100 _ %] [mu std 1 (dec period)])
                      identity wave-net-output)]
     {:a amplitude, :p period, :s shift}
 ))
@@ -381,31 +395,32 @@
 (defm get-init-pos [c WIDTH HEIGHT]
   (let [position-net-output (vec (forward position-net c))]
     {:x (adaptive-sample (uniform-continuous 15 (- WIDTH 15))
-                         normal
-                         #(let [mu (* (first %) (/ WIDTH 240)) std 150] [mu std])
+                         bounded-normal
+                         #(let [mu (* (first %) (/ WIDTH 240)) std 5] [mu std 15 (- WIDTH 15)])
                          identity position-net-output),
      :y (adaptive-sample (uniform-continuous 15 (- HEIGHT 15))
-                         normal
-                         #(let [mu (* (second %) (/ HEIGHT 110)) std 70] [mu std])
+                         bounded-normal
+                         #(let [mu (* (second %) (/ HEIGHT 110)) std 5] [mu std 15 (- WIDTH 15)])
                          identity position-net-output)}
 ))
 
 ;; TODO: use adaptive sample
-;; (defm find-letter-pos [c positions WIDTH HEIGHT]
-;;   (let [letter-width 20
-;;         crop-x (if (zero? (count positions)) 0 (min (- WIDTH 2) (+ letter-width (first (last positions)))))
-;;         submat (crop c crop-x)
-;;         pos-net-output (vec (forward position-net submat))
-;;        ]
+(defm find-letter-pos [c positions WIDTH HEIGHT]
+  (let [letter-width 35
+        crop-x (if (zero? (count positions)) 0 (min (- WIDTH 2) (+ letter-width (first (last positions)))))
+        submat (crop c crop-x)
+        pos-net-output (vec (forward position-net submat))
+       ]
 ;;     [(adaptive-sample (uniform-continuous 15 (- WIDTH 15))
 ;;                          normal
-;;                          #(let [mu (* (first %) (/ WIDTH 240)) std 10] [mu std])
+;;                          #(let [mu (* (first %) (/ WIDTH 240)) std 150] [mu std])
 ;;                          identity pos-net-output),
 ;;      (adaptive-sample (uniform-continuous 15 (- HEIGHT 15))
 ;;                          normal
-;;                          #(let [mu (* (second %) (/ HEIGHT 110)) std 10] [mu std])
+;;                          #(let [mu (* (second %) (/ HEIGHT 110)) std 40] [mu std])
 ;;                          identity pos-net-output)]
-;; ))
+    pos-net-output
+))
 
 (defm get-letter-vars [num-letters WIDTH HEIGHT]
   (loop [i 0
@@ -414,12 +429,12 @@
    (if (= i num-letters) {:positions positions, :letters letters}
      (let [pos-net-output (find-letter-pos baseline positions WIDTH HEIGHT)
            x-pos (max 15 (adaptive-sample (uniform-continuous 15 (- WIDTH 15))
-                       normal
-                       #(let [mu (* (first %) (/ WIDTH 240)) std 500] [mu std])
+                       bounded-normal
+                       #(let [mu (* (first %) (/ WIDTH 240)) std 5] [mu std 16 (- WIDTH 16)])
                        identity pos-net-output))
            y-pos (max 15 (adaptive-sample (uniform-continuous 15 (- HEIGHT 15))
-                       normal
-                       #(let [mu (* (second %) (/ HEIGHT 110)) std 300] [mu std])
+                       bounded-normal
+                       #(let [mu (* (second %) (/ HEIGHT 110)) std 5] [mu std 16 (- HEIGHT 16)])
                        identity pos-net-output))
 
            letter-index (sample (uniform-discrete 0 (count alphabet)))
@@ -438,7 +453,7 @@
         ;; begin sampling vars
         num-letters (sample (uniform-discrete 3 9))
 
-        ;; run wave net
+;;         ;; run wave net
         wave-output (run-wave-nn baseline)
         amplitude (:a wave-output)
         period (:p wave-output)
@@ -463,6 +478,7 @@
         ;; use nets to predict letter position and identity, iteratively
         letter-vars (get-letter-vars num-letters WIDTH HEIGHT )
          ]
+
     ;; render image
     (map #(drawLetter rendered %1 %2 init-y %3 theta %4 %5 is-present color)
          (:letters letter-vars) (map first (:positions letter-vars))
@@ -475,11 +491,9 @@
 ;;           indices (repeatedly num-random-pixels #(nextInt rdm (count rendered-pixels)))]
 ;;       (doall (map #(observe (flip 1) (<= (second %) HEIGHT)) (:positions letter-vars)))
 ;;       (doall (map #(observe (flip 1) (<= (first %) WIDTH)) (:positions letter-vars)))
-;;       (doall (map #(observe (normal %1 300000) %2) rendered-pixels baseline-pixels))
-      (observe (normal 1 10) 1)
+      (doall (map #(observe (normal %1 5000) %2) rendered-pixels baseline-pixels))
       )
 
-    (observe (normal 1 10) 1)
     (predict :num-letters num-letters)
     (predict :amplitude amplitude)
     (predict :period period)
@@ -491,26 +505,38 @@
     (predict :thickness thickness)
     (predict :letters (:letters letter-vars))
     (predict :scale scale)
+    (predict :blur rendered-sigma)
 )))
 
-(def num-particles 200)
+(def num-particles 50)
 (def sampler (doquery :smc read-captcha [baseline] :number-of-particles num-particles))
 (with-out-str (time (nth sampler (dec num-particles))))
 (nth sampler (dec num-particles))
+(.showImg baseline)
 
+(def posterior ((conditional read-captcha :smc :number-of-particles num-particles) baseline))
+(def num-samples num-particles)
+(def result (repeatedly num-samples #(sample posterior)))
+(last result)
 
-(let [c (get-predicts (nth sampler (dec num-particles)))
+;; (render-predicts (last result))
+(vec (forward position-net baseline))
+(* 26 (/ 150 240.0))
+(* 73 (/ 70 110.0))
+
+(let [c (last result)
        captcha (Captcha. (getWidth baseline) (getHeight baseline))]
     (doall (map #(drawLetter captcha %1 %2 (:y c) %3 0 %4 %5 true 255)
                   (:letters c) (:x c) (:scale c) (:thickness c) (:sigma c)))
     (ripple captcha (:amplitude c) (:period c) (:shift c))
+  (globalBlur captcha (:blur c))
   (.showImg captcha))
 
 ;; (render-predicts (get-predicts (nth sampler (dec num-particles))))
-;; (.showImg baseline)
+(.showImg baseline)
 
 (render-predicts (get-predicts (nth sampler 6)))
-(nth sampler 6)
+(nth sampler 18)
 
 
 
@@ -519,33 +545,9 @@
 ;; (markPoints baseline [[32.63314874220046 68.22892198271965] [76.71837154154466 87.12912146403134] [101.56839051170493 95.06499449847719] [124.31746088037221 80.53787318423007] [182.72423711742124 83.34101120544398] [224.03264394033403 77.16722766547159]])
 ;; (.showImg baseline)
 
-(with-primitive-procedures [forward]
-  (defm do-nothing []
-    (let [z (adaptive-sample (uniform-continuous 0 10)
-                           normal
-                           #(let [_ %] [10 5])
-                           identity
-                           nil)
-        a (adaptive-sample (uniform-continuous 0 10)
-                           normal
-                           #(let [_ %] [10 5])
-                           identity
-                           nil)
-        b (sample (uniform-discrete 0 10))]
-      a))
-
-(defquery simple []
-  (let [
-         x (adaptive-sample (uniform-continuous 0 10)
-                           normal
-                           #(let [_ %] [-10 300])
-                           identity
-                           nil)
-        y (adaptive-sample (uniform-continuous 0 12)
-                     normal
-                     #(let [_ % mu 8 std 5] [mu std])
-                     identity nil)
-;;         z (adaptive-sample (uniform-continuous 0 10)
+;; (with-primitive-procedures [forward]
+;;   (defm do-nothing []
+;;     (let [z (adaptive-sample (uniform-continuous 0 10)
 ;;                            normal
 ;;                            #(let [_ %] [10 5])
 ;;                            identity
@@ -555,16 +557,43 @@
 ;;                            #(let [_ %] [10 5])
 ;;                            identity
 ;;                            nil)
-        b (sample (uniform-discrete 0 10))]
-    (observe (normal 3 1) 10)
-    (predict :x b))))
+;;         b (sample (uniform-discrete 0 10))]
+;;       a))
 
-(vec (forward wave-net baseline))
+;; (defquery simple []
+;;   (let [
+;;          x (adaptive-sample (uniform-continuous 0 10)
+;;                            normal
+;;                            #(let [_ %] [-10 300])
+;;                            identity
+;;                            nil)
+;;         y (adaptive-sample (uniform-continuous 0 12)
+;;                      normal
+;;                      #(let [_ % mu 8 std 5] [mu std])
+;;                      identity nil)
+;; ;;         z (adaptive-sample (uniform-continuous 0 10)
+;; ;;                            normal
+;; ;;                            #(let [_ %] [10 5])
+;; ;;                            identity
+;; ;;                            nil)
+;; ;;         a (adaptive-sample (uniform-continuous 0 10)
+;; ;;                            normal
+;; ;;                            #(let [_ %] [10 5])
+;; ;;                            identity
+;; ;;                            nil)
+;;         b (sample (uniform-discrete 0 10))]
+;;     (observe (normal 3 1) 10)
+;;     (predict :x b))))
 
-(def record (loop [i 0 results []]
-  (if (= i 10) results
-    (let [test-sampler (doquery :smc simple [] :number-of-particles 500)]
-  (recur (inc i) (conj results (nth test-sampler 500)))))))
-(map :log-weight record)
+;; (vec (forward wave-net baseline))
+
+;; (def record (loop [i 0 results []]
+;;   (if (= i 10) results
+;;     (let [test-sampler (doquery :smc simple [] :number-of-particles 500)]
+;;   (recur (inc i) (conj results (nth test-sampler 500)))))))
+;; (map :log-weight record)
+
+
+
 
 
